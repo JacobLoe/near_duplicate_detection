@@ -47,36 +47,37 @@ def read_video(video_path,start_ms,end_ms):
     timestamps=[]
     vid_length=0
     with tqdm(total=end_frame-start_frame+1) as pbar: #init the progressbar,with max length of the given segment
-#        vid.set(cv2.CAP_PROP_POS_FRAMES,start_frame)
-#        while(vid.isOpened()):
+        vid.set(cv2.CAP_PROP_POS_FRAMES,start_frame)
+        while(vid.isOpened()):
+            ret, frame = vid.read()
+            if (vid_length+start_frame)==end_frame:
+                #pbar.update(1)
+                break
+
+            frame=cv2.resize(frame,frame_size)
+            frames.append(np.array(frame,dtype='float32'))
+            timestamps.append(vid_length+start_frame)
+            #pbar.update(1) #update the progressbar
+            vid_length+=1 #increase the vid_length counter
+
+############################################################
+#            vid.set(cv2.CAP_PROP_POS_FRAMES,middle_frame-1)
 #            ret, frame = vid.read()
-#            if (vid_length+start_frame)==end_frame:
-#                pbar.update(1)
-#                break
-#
 #            frame=cv2.resize(frame,frame_size)
 #            frames.append(np.array(frame,dtype='float32'))
-#            timestamps.append(vid_length+start_frame)
-#            pbar.update(1) #update the progressbar
-#            vid_length+=1 #increase the vid_length counter
+#            timestamps.append(middle_frame-1)
 
-            vid.set(cv2.CAP_PROP_POS_FRAMES,middle_frame-1)
-            ret, frame = vid.read()
-            frame=cv2.resize(frame,frame_size)
-            frames.append(np.array(frame,dtype='float32'))
-            timestamps.append(middle_frame-1)
+#            vid.set(cv2.CAP_PROP_POS_FRAMES,middle_frame)
+#            ret, frame = vid.read()
+#            frame=cv2.resize(frame,frame_size)
+#            frames.append(np.array(frame,dtype='float32'))
+#            timestamps.append(middle_frame)
 
-            vid.set(cv2.CAP_PROP_POS_FRAMES,middle_frame)
-            ret, frame = vid.read()
-            frame=cv2.resize(frame,frame_size)
-            frames.append(np.array(frame,dtype='float32'))
-            timestamps.append(middle_frame)
-
-            vid.set(cv2.CAP_PROP_POS_FRAMES,middle_frame+1)
-            ret, frame = vid.read()
-            frame=cv2.resize(frame,frame_size)
-            frames.append(np.array(frame,dtype='float32'))
-            timestamps.append(middle_frame+1)
+#            vid.set(cv2.CAP_PROP_POS_FRAMES,middle_frame+1)
+#            ret, frame = vid.read()
+#            frame=cv2.resize(frame,frame_size)
+#            frames.append(np.array(frame,dtype='float32'))
+#            timestamps.append(middle_frame+1)
     vid.release()
     cv2.destroyAllWindows()
     return frames,timestamps
@@ -114,8 +115,7 @@ if __name__ == "__main__":
     #################################################
     # models
     print('load model')
-                                                                                                                               #lowest distance
-    NASNetMobile_model = NASNetMobile(weights='imagenet', include_top=False,pooling='max',input_shape=(224,224,3))             #64
+    NASNetMobile_model = NASNetMobile(weights='imagenet', include_top=False,pooling='max',input_shape=(224,224,3))
 
     print('done')
     #####################################################################################################
