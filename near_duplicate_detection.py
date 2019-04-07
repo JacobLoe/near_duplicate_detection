@@ -141,7 +141,9 @@ if __name__ == "__main__":
             shot_begin_ms.append(begin_ms)
             shot_end_ms.append(end_ms)
             frame_timestamp.append(timestamps[i])
+    # add everything into one dictionary
     all_distances={'source_video':source_video,'source_scene':source_scene,'shot_begin_ms':shot_begin_ms,'shot_end_ms':shot_end_ms,'distances':distances,'frame_timestamp':frame_timestamp}
+    # find the lowest distance
     lowest_distance_index=np.argmin(all_distances['distances'])
     
     print('distance: ',all_distances['distances'][lowest_distance_index],'\n',
