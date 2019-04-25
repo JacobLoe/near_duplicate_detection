@@ -20,7 +20,7 @@ def extract_features(model,frame):
 if __name__ == "__main__":
 
    parser = argparse.ArgumentParser()
-   parser.add_argument("features_dir",help="the directory where the images are to be stored, for example 'features'")
+   parser.add_argument("features_dir",help="the directory where the feature-vectors are to be stored, for example 'features'")
    args=parser.parse_args()
 
    # model
@@ -30,7 +30,6 @@ if __name__ == "__main__":
 
    features_path=args.features_dir+'/'
 
-   features_path='features_videos/'
    for video_dir in tqdm(os.listdir(features_path)):
        #create a directory for the features
        if not os.path.isdir(features_path+video_dir+'/features'):
