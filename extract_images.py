@@ -13,19 +13,28 @@ def read_shotdetect_xml(path):
     for child in root[0].iter():
         if child.tag == 'shot':
             items=child.items()
-            timestamps.append((int(items[3][1]),int(items[3][1])+int(items[1][1])-1))
+            timestamps.append((int(items[3][1]),int(items[3][1])+int(items[1][1])-1)) #frames
+            #timestamps.append((int(items[4][1]),int(items[4][1])+int(items[2][1])-1)) #ms
     return timestamps #in frames
 #############################################################################################
 #read video file frame by frame, beginning and ending with a timestamp
-def save_shot_frames(video_path,frame_path,start_frame,end_frame):
+def save_shot_frames(video_path,frame_path,start_ms,end_ms):
     vid = cv2.VideoCapture(video_path)
 
-    middle_frame=start_frame+round((end_frame-start_frame)/2)
     frame_size=(224, 224)
+    #print(start_ms/1000,end_ms/1000)
+    #print(range(int(end_ms/1000-start_ms/1000)+1))
 
-    #for i in [-1,0,1]:
+#    for i in range(int(end_ms/1000-start_ms/1000)+1):
+#        if not (start_ms/1000+i)==(int(end_ms/1000-start_ms/1000)+1):
+#           vid.set(cv2.CAP_PROP_POS_MSEC,start_ms+i*1000)
+#           ret, frame = vid.read()
+#           frame=cv2.resize(frame,frame_size)
+#           name = frame_path+str(start_ms+i)+'.png'
+#           cv2.imwrite(name,frame)
 
-    vid.set(cv2.CAP_PROP_POS_FRAMES,middle_frame)
+    middle_frame=start_frame+round((end_ms-start_ms)/2)
+    vid.set(cv2.CAP_PROP_POS_MSEC,middle_frame)
     ret, frame = vid.read()
     frame=cv2.resize(frame,frame_size)
     name = frame_path+str(middle_frame)+'.png'

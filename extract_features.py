@@ -6,7 +6,8 @@ from tqdm import tqdm
 
 from keras.preprocessing import image
 from keras.applications.inception_v3 import InceptionV3
-from keras.applications.nasnet import preprocess_input
+from keras.applications.inception_v3 import preprocess_input
+from keras.models import Model
 #################################################################
 # uses a given model and an image(numpy array) and returns its features
 def extract_features(model,frame):
@@ -14,6 +15,7 @@ def extract_features(model,frame):
     frame=np.expand_dims(frame, axis=0)
     frame=preprocess_input(frame)
     features = model.predict(frame)
+    features=features/np.linalg.norm(features) #normalize length of feature vector
 
     return features
 #########################################################################################################
@@ -25,7 +27,9 @@ if __name__ == "__main__":
 
    # model
    print('load model')
-   InceptionV3_model = InceptionV3(weights='imagenet', include_top=False,pooling='max',input_shape=(224,224,3))
+#  InceptionV3_model = InceptionV3(weights='imagenet', include_top=True,input_shape=(224,224,3))
+   InceptionV3_model = InceptionV3(weights='imagenet',input_shape=(224,224,3))
+   InceptionV3_model = Model(inputs=InceptionV3_model.input,output=InceptionV3_model.get_layer('avg_pool').output)
    print('done')
 
    features_path=args.features_dir+'/'
@@ -40,7 +44,6 @@ if __name__ == "__main__":
            
                frame = cv2.imread(features_path+video_dir+'/shots/'+shot+'/'+image_name)
                feature = extract_features(InceptionV3_model,frame)
-               
                #save features in the new directory, sorted by shots, named like the frame the features are from 
                if not os.path.isdir(features_path+video_dir+'/features/'+shot):
                   os.mkdir(features_path+video_dir+'/features/'+shot)
