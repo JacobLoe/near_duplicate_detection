@@ -35,23 +35,25 @@ def load_model():
    return model
 ####################################################
 def main(features_path):
-
    model=load_model()
    for video_dir in tqdm(os.listdir(features_path)):
-       #create a directory for the features
-       if not os.path.isdir(features_path+video_dir+'/features'):
-          os.mkdir(features_path+video_dir+'/features')
+       try:
+          #create a directory for the features
+          if not os.path.isdir(features_path+video_dir+'/features'):
+             os.mkdir(features_path+video_dir+'/features')
 
-       for shot in tqdm(os.listdir(features_path+video_dir+'/shots')):
-           for image_name in os.listdir(features_path+video_dir+'/shots/'+shot):
+          for shot in tqdm(os.listdir(features_path+video_dir+'/shots')):
+              for image_name in os.listdir(features_path+video_dir+'/shots/'+shot):
            
-               frame = cv2.imread(features_path+video_dir+'/shots/'+shot+'/'+image_name)
-               feature = extract_features(model,frame)
-               #save features in the new directory, sorted by shots, named like the frame the features are from 
-               if not os.path.isdir(features_path+video_dir+'/features/'+shot):
-                  os.mkdir(features_path+video_dir+'/features/'+shot)
-               path=features_path+video_dir+'/features/'+shot+'/'+image_name[:-4]
-               np.save(path,feature)
+                  frame = cv2.imread(features_path+video_dir+'/shots/'+shot+'/'+image_name)
+                  feature = extract_features(model,frame)
+                  #save features in the new directory, sorted by shots, named like the frame the features are from 
+                  if not os.path.isdir(features_path+video_dir+'/features/'+shot):
+                     os.mkdir(features_path+video_dir+'/features/'+shot)
+                     path=features_path+video_dir+'/features/'+shot+'/'+image_name[:-4]
+                     np.save(path,feature)
+       except:
+          pass
 #########################################################################################################
 if __name__ == "__main__":
 

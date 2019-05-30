@@ -18,24 +18,26 @@ if __name__ == "__main__":
    #########################################
 
    for video_dir in os.listdir(videos_path):
+       try:
+          if not os.path.isdir(features_path+video_dir):
+             os.mkdir(features_path+video_dir)
 
-       if not os.path.isdir(features_path+video_dir):
-          os.mkdir(features_path+video_dir)
+          for video in os.listdir(videos_path+video_dir):
+              if args.overwrite:
+                 print('start shotdetection for {}'.format(video_dir))
 
-       for video in os.listdir(videos_path+video_dir):
-           if args.overwrite:
-              print('start shotdetection for {}'.format(video_dir))
+                 if not os.path.isdir(features_path+video_dir+'/shot_detection'):
+                    os.mkdir(features_path+video_dir+'/shot_detection')
 
-              if not os.path.isdir(features_path+video_dir+'/shot_detection'):
-                 os.mkdir(features_path+video_dir+'/shot_detection')
-
-              keywords=['-i',videos_path+video_dir+'/'+video,
-                        '-o',features_path+video_dir+'/shot_detection',
-                        '-s','60']
-              process=['shotdetect']+keywords
-              p=subprocess.run(process,bufsize=0,
-                               shell=False,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-              with open(features_path+video_dir+'/shot_detection/log.txt','w') as f:
-                   f.write(str(p.stderr))
+                  keywords=['-i',videos_path+video_dir+'/'+video,
+                           '-o',features_path+video_dir+'/shot_detection',
+                           '-s','60']
+                 process=['shotdetect']+keywords
+                 p=subprocess.run(process,bufsize=0,
+                                  shell=False,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+                 with open(features_path+video_dir+'/shot_detection/log.txt','w') as f:
+                      f.write(str(p.stderr))
+       except:
+          pass

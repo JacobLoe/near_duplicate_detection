@@ -7,13 +7,16 @@ from werkzeug.utils import secure_filename
 import numpy as np
 from query import main
 import cv2
+#from extract_features import load_model
 
 ##########################################################################
-UPLOAD_FOLDER = 'flask_test'
+UPLOAD_FOLDER = ''
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+#app.config['model'] = load_model()
+
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -35,16 +38,15 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             
-
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'],filename)
             file.save(file_path)
             #resize the target image for better visualization in html
             resized_file = cv2.imread(file_path)      
             resized_file = cv2.resize(resized_file,(224,224))
             resized_file = cv2.imwrite(file_path,resized_file)
 
-            features_path = '../features_videos_inresv2/'
-            html_path = 'results.html'
+            features_path = os.path.join(app.config['UPLOAD_FOLDER'],'static/features_videos_inresv2/')
+            html_path = os.path.join(app.config['UPLOAD_FOLDER'],'results.html')
             
             #call the main function of the query
             main(features_path,file_path,html_path)
@@ -52,7 +54,8 @@ def upload_file():
             with open(html_path,'r') as f:
                  html_string = f.read()
 
-            return html_string#redirect(url_for('uploaded_file',filename=filename))
+            return redirect(url_for('uploaded_file',filename=html_path))
+            #return html_string#redirect(url_for('uploaded_file',filename=filename))
     return '''
     <!doctype html>
     <title>Upload new File</title>
@@ -65,7 +68,7 @@ def upload_file():
 
 from flask import send_from_directory
 
-@app.route('/uploads/<filename>')
+@app.route('/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'],
                                filename)
