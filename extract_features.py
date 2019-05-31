@@ -3,18 +3,11 @@ import cv2
 import argparse
 import numpy as np
 from tqdm import tqdm
+import glob
 
 from keras.preprocessing import image
-#from keras.applications.inception_v3 import InceptionV3
-#from keras.applications.inception_v3 import preprocess_input
-#from keras.applications.resnet50 import ResNet50
-#from keras.applications.resnet50 import preprocess_input
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.applications.inception_resnet_v2 import preprocess_input
-#from keras.applications.vgg19 import VGG19
-#from keras.applications.vgg19 import preprocess_input
-#from keras.applications.vgg16 import VGG16
-#from keras.applications.vgg16 import preprocess_input
 from keras.models import Model
 #################################################################
 # uses a given model and an image(numpy array) and returns its features
@@ -35,25 +28,33 @@ def load_model():
    return model
 ####################################################
 def main(features_path):
-   model=load_model()
-   for video_dir in tqdm(os.listdir(features_path)):
-       try:
-          #create a directory for the features
-          if not os.path.isdir(features_path+video_dir+'/features'):
-             os.mkdir(features_path+video_dir+'/features')
 
-          for shot in tqdm(os.listdir(features_path+video_dir+'/shots')):
-              for image_name in os.listdir(features_path+video_dir+'/shots/'+shot):
-           
-                  frame = cv2.imread(features_path+video_dir+'/shots/'+shot+'/'+image_name)
-                  feature = extract_features(model,frame)
-                  #save features in the new directory, sorted by shots, named like the frame the features are from 
-                  if not os.path.isdir(features_path+video_dir+'/features/'+shot):
-                     os.mkdir(features_path+video_dir+'/features/'+shot)
-                     path=features_path+video_dir+'/features/'+shot+'/'+image_name[:-4]
-                     np.save(path,feature)
-       except:
-          pass
+   list_images_path = glob.glob(os.path.join(features_path,'**/*.png'),recursive=True) #get the list of videos in videos_dir
+
+   cp = os.path.commonprefix(list_images_path) #get the common dir between paths found with glob
+
+   list_features_path = [os.path.split(                # split of the shots folder
+                         os.path.split(                # split of the image-file name
+                         os.path.join(features_path, 
+                         os.path.relpath(p,cp)))[0])[0]
+                         for p in list_images_path] 
+   model=load_model()
+
+   for i_path,f_path in tqdm(zip(list_images_path,list_features_path),total=len(list_images_path)):
+
+       feature_name = os.path.split(i_path)[1][:-4] #get the name of the image, remove the file extension
+       shot = os.path.split(os.path.split(i_path)[0])[1] #get the name of the shot for the image
+
+       fp = os.path.join(f_path,'features',shot)
+       print(fp)
+       if not os.path.isdir(fp): #create the directory to save the features
+          os.makedirs(fp)
+
+       frame = cv2.imread(i_path) #read the image from disc
+       feature = extract_features(model,frame) #run the model on the image
+       path = os.path.join(fp,feature_name) #specify the path to which the feature is saved, the name is the same as the image (w/o the file-extension)
+       np.save(path,feature) #save the feature to disc
+       break
 #########################################################################################################
 if __name__ == "__main__":
 
