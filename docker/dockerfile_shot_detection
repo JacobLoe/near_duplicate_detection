@@ -1,0 +1,21 @@
+#docker run --rm -it -v $(pwd)/../../videos:/video:ro -v $(pwd)/static/features_videos:/data  jacobloe/shot_detection:0.1 /video /data/
+
+#docker build -f dockerfile_shot_detection -t jacobloe/shot_detection:0.1 .
+
+# Use an official Python runtime as a parent image
+FROM python:3.6.8-slim
+
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update && apt-get install -y shotdetect && rm -rf /var/lib/apt/lists/* #apt-get clean-up
+
+COPY shot_detection.py /root
+
+RUN pip3 install --trusted-host pypi.python.org argparse  
+
+VOLUME "/video"
+VOLUME "/data"
+
+WORKDIR /root
+
+ENTRYPOINT ["python3", "shot_detection.py"]
