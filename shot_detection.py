@@ -13,9 +13,9 @@ if __name__ == "__main__":
 
    cp = os.path.commonprefix(list_videos_path) #get the common dir between paths found with glob
 
-   list_features_path = [os.path.join(os.path.split(                  # split of the name of the videofile from the newly created feature-path
-                         os.path.join(args.features_dir, #join the feature direction and the path in which the video is saved
-                         os.path.relpath(p,cp)))[0],'shot_detection')
+   list_features_path = [os.path.join(                 
+                         os.path.join(args.features_dir,               
+                         os.path.relpath(p,cp))[:-4],'shot_detection') #add a new dir 'VIDEO_FILE_NAME/shot_detection' to the path
                          for p in list_videos_path] #create a list of paths where all the data (shotdetection,frames,features) are saved to
    
    for v_path,f_path in zip(list_videos_path,list_features_path):

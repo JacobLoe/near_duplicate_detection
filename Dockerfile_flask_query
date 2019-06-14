@@ -1,6 +1,6 @@
 #docker run --rm -it -v $(pwd)/static/features_videos:/data  -p 5000:80 jacobloe/flask_query:0.1
 
-#docker build -f dockerfile_flask_query -t jacobloe/flask_query:0.1 .
+#docker build -f Dockerfile_flask_query -t jacobloe/flask_query:0.1 .
 
 # Use an official Python runtime as a parent image
 FROM python:3.6.8-stretch
