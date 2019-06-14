@@ -7,19 +7,21 @@ FROM python:3.6.8-stretch
 
 ENV DEBIAN_FRONTEND noninteractive
 
-WORKDIR /root
+
 
 COPY flask_query.py /root
 COPY query.py /root
 COPY extract_features.py /root
 COPY requirements_flask_query.txt /root
 
-RUN pip3 install --trusted-host pypi.python.org -r requirements_flask_query.txt
+RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_flask_query.txt
 
 EXPOSE 80
 
 VOLUME "/data"
 
 ENV NAME World
+
+WORKDIR /root
 
 CMD ["python3", "flask_query.py"]

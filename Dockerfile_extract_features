@@ -7,13 +7,13 @@ FROM python:3.6.8-stretch
 
 ENV DEBIAN_FRONTEND noninteractive
 
-WORKDIR /root
-
 COPY extract_features.py /root
 COPY requirements_extract_features.txt /root
 
-RUN pip3 install --trusted-host pypi.python.org -r requirements_extract_features.txt
+RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_extract_features.txt
 
 VOLUME "/data"
+
+WORKDIR /root
 
 ENTRYPOINT ["python3", "extract_features.py"]
