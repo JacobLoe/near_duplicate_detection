@@ -33,7 +33,7 @@ def main(features_path):
    list_images_path = glob.glob(images) #get the list of videos in videos_dir
    #print(list_images_path)
    cp = os.path.commonprefix(list_images_path) #get the common dir between paths found with glob
-   
+
    list_features_path = [os.path.split(                # split of the shots folder
                          os.path.split(                
                          os.path.split(                # split of the image-file name

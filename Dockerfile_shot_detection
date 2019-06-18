@@ -7,7 +7,7 @@ FROM python:3.6.8-slim
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update && apt-get install -y shotdetect && rm -rf /var/lib/apt/lists/* #apt-get clean-up
+RUN apt-get update && apt-get install -y shotdetect && rm -rf /var/lib/apt/lists/* #&& apt-get clean
 
 COPY shot_detection.py /root
 
