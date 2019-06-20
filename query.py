@@ -43,17 +43,21 @@ def main(features_path,target_image,results):
        fv=np.load(feature)
        distances.append(euclidean(fv,target_features))
        i_ft = os.path.split(feature)
-       i_s = os.path.split(i_ft[0])
-       i_sv = os.path.split(os.path.split(i_s[0])[0])
+       i_sbf = os.path.split(i_ft[0])
+       i_sv = os.path.split(os.path.split(i_sbf[0])[0])
+
+       #recreate the path to image
+       #aux = os.path.split(os.path.split(os.path.split(feature)[0])[0])[0]
+       i_fp = os.path.join(i_sv[0],i_sv[1],'shots',i_sbf[1],i_ft[1][:-4]+'.png')
 
        #add information for the frame
        source_video.append(i_sv[1]) #save the name of the source video
-       shot_begin_frame.append(i_s[1]) #save the beginning timestamp of the shot the feature is from
+       shot_begin_frame.append(i_sbf[1]) #save the beginning timestamp of the shot the feature is from
        frame_timestamp.append(i_ft[1][:-4]) #save the specific timestamp the feature is at
-       frame_path.append(feature)
+       frame_path.append(i_fp)
 
    #sort by distance, ascending, take only the first 10 images
-   lowest_distances=sorted(zip(distances,source_video,shot_begin_frame,frame_timestamp))[:30]
+   lowest_distances=sorted(zip(distances,source_video,shot_begin_frame,frame_timestamp,frame_path))[:30]
    ## FIX ME filter distances
 
    ######################################################################################

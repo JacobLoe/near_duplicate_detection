@@ -1,4 +1,4 @@
-Flask
+Flask==1.0.2
 opencv-python
 numpy
 tqdm
@@ -6,3 +6,4 @@ datetime
 tensorflow
 keras
 scipy
+pillow

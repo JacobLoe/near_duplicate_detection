@@ -7,16 +7,12 @@ from werkzeug.utils import secure_filename
 import numpy as np
 from query import main
 import cv2
-#from extract_features import load_model
-
 ##########################################################################
 UPLOAD_FOLDER = ''
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-#app.config['model'] = load_model()
-
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -45,7 +41,7 @@ def upload_file():
             resized_file = cv2.resize(resized_file,(299,299))
             resized_file = cv2.imwrite(file_path,resized_file)
 
-            features_path = os.path.join(app.config['UPLOAD_FOLDER'],'static/features_videos_inresv2/')
+            features_path = os.path.join(app.config['UPLOAD_FOLDER'],'static/')
             html_path = os.path.join(app.config['UPLOAD_FOLDER'],'results.html')
             
             #call the main function of the query
@@ -55,7 +51,6 @@ def upload_file():
                  html_string = f.read()
 
             return redirect(url_for('uploaded_file',filename=html_path))
-            #return html_string#redirect(url_for('uploaded_file',filename=filename))
     return '''
     <!doctype html>
     <title>Upload new File</title>
@@ -72,3 +67,6 @@ from flask import send_from_directory
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'],
                                filename)
+
+if __name__ == '__main__':
+    app.run(debug=False, host='0.0.0.0',port=80)
