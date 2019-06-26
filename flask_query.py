@@ -2,16 +2,36 @@
 # flask run
 
 import os
-from flask import Flask, flash, request, redirect, url_for
+from flask import Flask, flash, request, redirect, url_for,Blueprint
 from werkzeug.utils import secure_filename
 import numpy as np
 from query import main
 import cv2
+import argparse
 ##########################################################################
 UPLOAD_FOLDER = ''
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
+class PrefixMiddleware(object):
+
+    def __init__(self, app, prefix=''):
+        self.app = app
+        self.prefix = prefix
+
+    def __call__(self, environ, start_response):
+
+        if environ['PATH_INFO'].startswith(self.prefix):
+            environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
+            environ['SCRIPT_NAME'] = self.prefix
+            return self.app(environ, start_response)
+        else:
+            start_response('404', [('Content-Type', 'text/plain')])
+            return ["This url does not belong to the app.".encode()]
+
+
 app = Flask(__name__)
+app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix='/imagesearch')
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def allowed_file(filename):
@@ -45,7 +65,8 @@ def upload_file():
             html_path = os.path.join(app.config['UPLOAD_FOLDER'],'results.html')
             
             #call the main function of the query
-            main(features_path,file_path,html_path)
+            num_results = 30
+            main(features_path,file_path,html_path,4,num_results)
 
             with open(html_path,'r') as f:
                  html_string = f.read()
