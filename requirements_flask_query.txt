@@ -7,3 +7,5 @@ tensorflow
 keras
 scipy
 pillow
+argparse
+sklearn
