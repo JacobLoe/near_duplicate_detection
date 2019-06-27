@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 import glob
+import shutil
 
 from keras.preprocessing import image
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
@@ -29,9 +30,10 @@ def load_model():
 ####################################################
 def main(features_path):
 
-   images = os.path.join(features_path,'*/*/shots/*/*.png')
+   model_name = 'features_InceptionResNetV2_avgpoolLayer'
+
+   images = os.path.join(features_path,'*/*/frames/*/*.png')
    list_images_path = glob.glob(images) #get the list of videos in videos_dir
-   #print(list_images_path)
    cp = os.path.commonprefix(list_images_path) #get the common dir between paths found with glob
 
    list_features_path = [os.path.split(                # split of the shots folder
@@ -46,7 +48,7 @@ def main(features_path):
        feature_name = os.path.split(i_path)[1][:-4] #get the name of the image, remove the file extension
        shot = os.path.split(os.path.split(i_path)[0])[1] #get the name of the shot for the image
 
-       fp = os.path.join(f_path,'features',shot)
+       fp = os.path.join(f_path,model_name,shot)
        if not os.path.isdir(fp): #create the directory to save the features
           os.makedirs(fp)
        
