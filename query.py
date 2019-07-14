@@ -22,6 +22,8 @@ def save_frame_to_disk(video_path,timestamp,img_name):
     cv2.imwrite(img_name,frame)
 ########################################################################################################
 def main(features_path,target_image,results,num_cores,num_results):
+   print('num_cores: ',num_cores)
+   print('num_results: ',num_results)
    model=load_model()
    print('load target_image')
    target_img = image.load_img(target_image, target_size=(299, 299))
@@ -57,6 +59,7 @@ def main(features_path,target_image,results,num_cores,num_results):
        shot_begin_frame.append(i_sbf[1]) #save the beginning timestamp of the shot the feature is from
        frame_timestamp.append(i_ft[1][:-4]) #save the specific timestamp the feature is at
        frame_path.append(i_fp) #save the path of the feature
+
    #calculate the distance for all features
    distances = pairwise_distances(feature_list,target_feature,metric=euclidean,n_jobs=num_cores)
    #sort by distance, ascending
@@ -106,9 +109,9 @@ if __name__ == "__main__":
    parser = argparse.ArgumentParser()
    parser.add_argument("features_dir",help="the directory in the feature vectors for the videos lie")
    parser.add_argument("target_image",help="the path to image that is to be searched for in the video")
-   parser.add_argument("--results",nargs='?',default='results.html',help="filename for the results")
-   parser.add_argument("num_cores",type=int,default=4,help="specify the number cpu cores used for distance calculation, default value is 4")
-   parser.add_argument("num_results",type=int,default=30,help="specify how many frames are to be returned in the .html-file")
+   parser.add_argument("--results",nargs='?',default='results.html',help="filename for the results, the default name is results.html")
+   parser.add_argument("--num_cores",type=int,default=4,help="specify the number cpu cores used for distance calculation, default value is 4")
+   parser.add_argument("--num_results",type=int,default=30,help="specify how many frames are to be returned in the .html-file,default value is 30")
    args=parser.parse_args()
 
    main(args.features_dir,args.target_image,args.results,args.num_cores,args.num_results)

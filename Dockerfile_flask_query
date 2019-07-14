@@ -7,12 +7,13 @@ FROM python:3.6.8-stretch
 
 ENV DEBIAN_FRONTEND noninteractive
 
-COPY flask_query.py /root
-COPY query.py /root
-COPY extract_features.py /root
 COPY requirements_flask_query.txt /root
 
 RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_flask_query.txt
+
+COPY flask_query.py /root
+COPY query.py /root
+COPY extract_features.py /root
 
 EXPOSE 80
 

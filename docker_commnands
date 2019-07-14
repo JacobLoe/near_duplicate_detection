@@ -10,6 +10,8 @@ docker build -f Dockerfile_flask_query -t jacobloe/flask_query:0.1 .
 docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_FEATURES:/data jacobloe/shot_detection:0.1 /video /data/
 docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_FEATURES:/data jacobloe/extract_images:0.1 /video /data/
 docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/data  jacobloe/extract_features:0.1 /data/
+
+# http://0.0.0.0:5000/imagesearch/
 docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/root/static -p 5000:80 jacobloe/flask_query:0.1
 
 

@@ -47,7 +47,7 @@ def upload_file():
             return redirect(request.url)
         file = request.files['file']
         # if user does not select file, browser also
-        # submit an empty part without filename
+        # submits an empty part without filename
         if file.filename == '':
             flash('No selected file')
             return redirect(request.url)
@@ -61,13 +61,16 @@ def upload_file():
             resized_file = cv2.resize(resized_file,(299,299))
             resized_file = cv2.imwrite(file_path,resized_file)
 
+            #define the path to the features and the html in a way usable byy flask
             features_path = os.path.join(app.config['UPLOAD_FOLDER'],'static/')
             html_path = os.path.join(app.config['UPLOAD_FOLDER'],'results.html')
             
             #call the main function of the query
+            num_cores = 4
             num_results = 30
-            main(features_path,file_path,html_path,4,num_results)
+            main(features_path,file_path,html_path,num_cores,num_results)
 
+            #read the the html-file created by the query.py main-function
             with open(html_path,'r') as f:
                  html_string = f.read()
 

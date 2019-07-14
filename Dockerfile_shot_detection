@@ -9,9 +9,9 @@ ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && apt-get install -y shotdetect && rm -rf /var/lib/apt/lists/* #&& apt-get clean
 
-COPY shot_detection.py /root
-
 RUN pip3 install --trusted-host pypi.python.org argparse  
+
+COPY shot_detection.py /root
 
 VOLUME "/video"
 VOLUME "/data"
