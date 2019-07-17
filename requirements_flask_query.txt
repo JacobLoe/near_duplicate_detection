@@ -9,3 +9,4 @@ scipy
 pillow
 argparse
 sklearn
+tensorflow

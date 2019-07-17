@@ -15,6 +15,9 @@ COPY flask_query.py /root
 COPY query.py /root
 COPY extract_features.py /root
 
+#COPY keras.json /root/.keras
+#COPY inception_resnet_v2_weights_tf_dim_ordering_tf_kernels_notop.h5 /root/.keras/models
+
 EXPOSE 80
 
 VOLUME "/data"
