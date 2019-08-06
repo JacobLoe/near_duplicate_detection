@@ -44,7 +44,7 @@ def get_features(features_path, target_image):
 
     list_features_path = glob.glob(os.path.join(features_path, '**/*.npy'), recursive=True)
 
-    feature_list =[]
+    feature_list = []
     for feature in tqdm(list_features_path, total=len(list_features_path)):
         fv = np.load(feature)
         feature_list.append(fv[0])  # create a list of features for the distance calculation
@@ -68,35 +68,38 @@ def get_features(features_path, target_image):
 ########################################################################################################
 
 
-def write_to_html(lowest_distances, results_path, num_results, target_image):
+def write_to_html(distances, results_path, num_results, target_image):
 
     # FIX ME filter distances
-    #filtered_distances = []
-    #hits = 0
-    #index = 0
-    #while((hits < num_results) or (index < len(lowest_distances))): #repeat filtering until num_results results are found or there are no distances in the list anymore
-    #    #if the current frame and the following frame are from the same video and the same shot
-    #    if (lowest_distances[index][1] == lowest_distances[index+1][1]) and (lowest_distances[index][2] == lowest_distances[index+1][2]):
-    #       index+=1
-    #    else:
-    #       filtered_distances.append(lowest_distances[index])
-    #       hits+=1
-    #       index+=1
-    filtered_distances = lowest_distances[:num_results]
+    filtered_distances = []
+    hits = 0
+    index = 0
+    print(np.shape(distances))
+    while((hits < num_results) and (index < (len(distances)-2))):  # repeat filtering until num_results results are found or there are no distances in the list anymore
+        # if the current frame and the following frame are from the same video and the same shot
+        if (distances[index][1] == distances[index+1][1]) and (distances[index][2] == distances[index+1][2]):
+            index += 1
+        else:
+            filtered_distances.append(distances[index])
+            hits += 1
+            index += 1
+    print(hits)
+    #filtered_distances = distances[:num_results]
 
-    lowest_distances = filtered_distances
+    distances = filtered_distances
     # write to html
-    html_str = '<!DOCTYPE html><html lang="en"><table cellspacing="20"><tr><th>thumbnail</th><th>videofile</th><th>frame timestamp</th><th>distance</th></tr>'
+    html_str = '<!DOCTYPE html><html lang="en"><table cellspacing="20"><tr><th>thumbnail</th><th>videofile</th><th>frame timestamp</th><th>shot_beginning</th><th>distance</th></tr>'
     # add the target image to the html
     html_str += str('<tr><td><img src="{}"></td></tr>'.format(target_image))
 
     # append the found images to the html
-    for dis, sv, sbf, ft, fp in lowest_distances:
+    for dis, sv, sbf, ft, fp in distances:
         # convert ms timestamp to hh:mm:ss
         ft = str(datetime.timedelta(seconds=int(ft)/1000))
+        sbf = str(datetime.timedelta(seconds=int(sbf)/1000))
 
         # write an entry for the table, format is: frame_path, source_video, frame_timestamp, distance
-        html_str += str('<tr><td><img src="{}"></td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(fp, sv, ft, dis))
+        html_str += str('<tr><td><img src="{}"></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(fp, sv, ft, sbf, dis))
 
     html_str += '</table></html>'
     aux = os.path.split(results_path)
@@ -117,13 +120,13 @@ if __name__ == "__main__":
     parser.add_argument("--results_path", nargs='?', default='results.html', help="filename for the results, the default name is results.html")
     parser.add_argument("--num_cores", type=int, default=4, help="specify the number cpu cores used for distance calculation, default value is 4")
     parser.add_argument("--num_results", type=int, default=30, help="specify how many frames are to be returned in the .html-file,default value is 30")
-    args=parser.parse_args()
+    args = parser.parse_args()
 
     features, info = get_features(args.features_dir, args.target_image)
 
     # calculate the distance for all features
-    distances = pairwise_distances(features['feature_list'], features['target_feature'], metric=euclidean, n_jobs=args.num_cores)
+    d_distances = pairwise_distances(features['feature_list'], features['target_feature'], metric=euclidean, n_jobs=args.num_cores)
     # sort by distance, ascending
-    lowest_distances = sorted(zip(distances, info['source_video'], info['shot_begin_frame'], info['frame_timestamp'], info['frame_path']))
+    lowest_distances = sorted(zip(d_distances, info['source_video'], info['shot_begin_frame'], info['frame_timestamp'], info['frame_path']))
 
     write_to_html(lowest_distances, args.results_path, args.num_results, args.target_image)
