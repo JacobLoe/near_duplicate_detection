@@ -12,17 +12,6 @@ from scipy.spatial.distance import euclidean
 from sklearn.metrics import pairwise_distances
 
 from extract_features import extract_features, load_model
-
-#########################################################################################################
-# save a frame to disk given a timestamp, the timestamp is expected to be the 'index' of a frame
-
-
-def save_frame_to_disk(video_path, timestamp, img_name):
-    vid = cv2.VideoCapture(video_path)
-    vid.set(cv2.CAP_PROP_POS_FRAMES, timestamp)
-    ret, frame = vid.read()
-    frame = cv2.resize(frame, (299, 299))
-    cv2.imwrite(img_name, frame)
 ########################################################################################################
 
 
@@ -73,18 +62,23 @@ def write_to_html(distances, results_path, num_results, target_image):
     # FIX ME filter distances
     filtered_distances = []
     hits = 0
+    shot_hits = []
     index = 0
     print(np.shape(distances))
-    while((hits < num_results) and (index < (len(distances)-2))):  # repeat filtering until num_results results are found or there are no distances in the list anymore
-        # if the current frame and the following frame are from the same video and the same shot
-        if (distances[index][1] == distances[index+1][1]) and (distances[index][2] == distances[index+1][2]):
-            index += 1
-        else:
-            filtered_distances.append(distances[index])
-            hits += 1
-            index += 1
-    print(hits)
-    #filtered_distances = distances[:num_results]
+    #print(distances[0])
+#    while((hits < num_results) and (index < (len(distances)-2))):  # repeat filtering until num_results results are found or there are no distances in the list anymore
+#        # if the current frame and the following frame are from the same video and the same shot
+#        #if (distances[index][1] == distances[index+1][1]) and (distances[index][2] == distances[index+1][2]):
+#        if (distances[index][1] == distances[index + 1][1]) and (distances[index][2] in shot_hits):
+#            print(index)
+#            index += 1
+#        else:
+#            shot_hits.append(distances[index][2])
+#            filtered_distances.append(distances[index])
+#            hits += 1
+#            index += 1
+#    print(shot_hits)
+    filtered_distances = distances[:num_results]
 
     distances = filtered_distances
     # write to html
