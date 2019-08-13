@@ -128,18 +128,20 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         num_results = 30
         filtered_distances = lowest_distances[:num_results]
 
-        print(len(filtered_distances))
-
-        concepts.extend({
-            'results': [
-                {'distance': dis,
+        print(type(filtered_distances[0][0]), filtered_distances[0][0])
+        print(type(filtered_distances[0][1]), filtered_distances[0][1])
+        print(type(filtered_distances[0][2]), filtered_distances[0][2])
+        print(type(filtered_distances[0][3]), filtered_distances[0][3])
+        print(type(filtered_distances[0][4]), filtered_distances[0][4])
+        concepts.extend([
+            {
+                 'distance': dis.tolist(),
                  'source_video': sv,
                  'shot_begin_frame': sbf,
                  'frame_timestamp': str(datetime.timedelta(seconds=int(ft) / 1000)),
                  'frame_path': str(datetime.timedelta(seconds=int(sbf) / 1000))
-                }
-                for dis, sv, sbf, ft, fp in filtered_distances]
             }
+            for dis, sv, sbf, ft, fp in filtered_distances]
         )
             # concepts.extend({
             #     'target_feature': features['target_feature'],
@@ -153,6 +155,10 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             #         for i, feature in enumerate(features['feature_list'])]
             #     }
             # )
+        # print(type(concepts))
+        # print(type(np.asarray(concepts)))
+        # concepts = np.asarray(concepts).tolist()
+        # print(type(concepts))
         logger.debug(concepts)
         s.send_response(200)
         s.send_header("Content-type", "application/json")

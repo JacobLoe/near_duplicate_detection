@@ -344,6 +344,7 @@ if __name__ == '__main__':
     output = response.json()
 
     # get the results from the server
+    # concepts = output.get('data')
     concepts = output.get('data')
     print(concepts)
     # print(requests.get(url))
