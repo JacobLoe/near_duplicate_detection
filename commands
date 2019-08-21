@@ -1,2 +1,0 @@
-docker build -f Dockerfile_server_setup -t jacobloe/server_setup:0.1 .
-docker run --rm -it -v $(pwd)/static/features_videos:/data  -p 9000:9000 jacobloe/server_setup:0.1 /data/
