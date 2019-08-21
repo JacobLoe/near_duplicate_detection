@@ -1,5 +1,4 @@
 import os
-import cv2
 import argparse
 import numpy as np
 from tqdm import tqdm
@@ -20,6 +19,8 @@ def get_features(features_path, target_image):
     print('load target_image')
     target_img = image.load_img(target_image, target_size=(299, 299))
     target_img = image.img_to_array(target_img)
+    print(type(target_img))
+    print(np.shape(target_img))
     print('done')
 
     print('extract feature for target image')
