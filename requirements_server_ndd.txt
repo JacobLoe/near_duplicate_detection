@@ -1,0 +1,11 @@
+opencv-python
+numpy
+tqdm
+datetime
+tensorflow
+keras
+scipy
+pillow
+argparse
+sklearn
+tensorflow

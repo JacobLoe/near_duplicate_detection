@@ -101,22 +101,24 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         target_image = np.array(target_image)
         print('done')
 
-        features_path = 'static/features_videos'
+        features_path = 'data'
         features, info = get_features(features_path, target_image)
 
         # calculate the distance for all features
+        print('calculating the distance for all features')
         distances = pairwise_distances(features['feature_list'], features['target_feature'], metric=euclidean, n_jobs=post_data['num_cores'])
+        print('done')
         # sort by distance, ascending
         lowest_distances = sorted(zip(distances, info['source_video'], info['shot_begin_frame'], info['frame_timestamp'], info['frame_path']))
 
         num_results = post_data['num_results']
         filtered_distances = []
-        hits = 0
-        shot_hits = []
+        hits = 0    # hits is incremented whenever a distance is added to filtered_distances, if hits is higher than num_results
+        shot_hits = []  # saves the name of the shots that have been added to filtered_distances
         index = 0
-        while((hits < num_results) and (index < (len(lowest_distances)-2))):  # repeat filtering until num_results results are found or there are no distances in the list anymore
-            # if the current frame and the following frame are from the same video and the same shot
-            # if (distances[index][1] == distances[index+1][1]) and (distances[index][2] == distances[index+1][2]):
+        while (hits < num_results) and (index < (len(lowest_distances)-2)):  # repeat filtering until num_results results are found or there are no distances in the list anymore
+            # if the current frame and the following frame are from the same video and the same shot, skip the current frame,
+            # otherwise add the distance to the list, increment the
             if (lowest_distances[index][1] == lowest_distances[index + 1][1]) and (lowest_distances[index][2] in shot_hits):
                 # print(index)
                 index += 1

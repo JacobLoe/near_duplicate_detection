@@ -8,9 +8,12 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("target_image", help="path to the target image")
+    parser.add_argument("--num_cores", type=int, default=8, help="specify the number cpu cores used for distance calculation, default value is 8")
+    parser.add_argument("--num_results", type=int, default=30, help="specify how many frames are to be returned, default is 30")
+    parser.add_argument("--url", default='http://localhost:9000/', help="url to server")
     args = parser.parse_args()
 
-    url = 'http://localhost:9000/'
+    url = args.url
 
     server_options = {}
     try:
@@ -30,8 +33,8 @@ if __name__ == '__main__':
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
 
     target_image = args.target_image
-    num_results = 30
-    num_cores = 8
+    num_results = args.num_results
+    num_cores = args.num_cores
 
     target_image = Image.open(target_image)
     buf = BytesIO()
@@ -49,3 +52,4 @@ if __name__ == '__main__':
 
     # get the results from the server
     concepts = output.get('data')
+    print(concepts)
