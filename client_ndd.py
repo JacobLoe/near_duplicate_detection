@@ -10,7 +10,7 @@ if __name__ == '__main__':
     parser.add_argument("target_image", help="path to the target image")
     parser.add_argument("--num_cores", type=int, default=8, help="specify the number cpu cores used for distance calculation, default value is 8")
     parser.add_argument("--num_results", type=int, default=30, help="specify how many frames are to be returned, default is 30")
-    parser.add_argument("--url", default='http://localhost:9000/', help="url to server")
+    parser.add_argument("--url", default='http://localhost:8000/', help="url to server")
     args = parser.parse_args()
 
     url = args.url
