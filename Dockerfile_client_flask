@@ -1,0 +1,15 @@
+FROM python:3.6.8-stretch
+
+ENV DEBIAN_FRONTEND noninteractive
+
+COPY requirements_client_flask.txt /root
+
+RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_client_flask.txt
+
+COPY client_flask.py /root
+
+EXPOSE 8000
+
+WORKDIR /root
+
+CMD ["python3", "client_flask.py"]

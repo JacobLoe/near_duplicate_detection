@@ -27,7 +27,7 @@ def load_model():
     print('load model')
     model = InceptionResNetV2(weights='imagenet', input_shape=(299, 299, 3))
     model = Model(inputs=model.input, output=model.get_layer('avg_pool').output)
-    print('done')
+    print('finished loading model')
     return model
 ####################################################
 

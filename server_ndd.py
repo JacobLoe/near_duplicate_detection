@@ -17,10 +17,10 @@ import base64
 import numpy as np
 
 logger = logging.getLogger(__name__)
+inception_model = load_model()
 
 
-def get_features(features_path, target_image):
-    model = load_model()
+def get_features(features_path, target_image, model):
 
     print('extract feature for target image')
     target_feature = extract_features(model, target_image)
@@ -57,6 +57,7 @@ def get_features(features_path, target_image):
 
 
 class RESTHandler(http.server.BaseHTTPRequestHandler):
+
     def do_HEAD(s):
         print('do_HEAD')
         s.send_response(200)
@@ -69,13 +70,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         s.send_header("Content-type", "application/json")
         s.end_headers()
 
-        response = json.dumps({"status": 200, "message": "OK", "data": { ## FIXME alles nach ok kann weg,
-            "capabilities": {
-                "minimum_batch_size": 1,  # # of frames
-                "maximum_batch_size": 500,  # # of frames
-                "available_models": 'models'
-            }
-        }})
+        response = json.dumps({"status": 200, "message": "OK"})
         s.wfile.write(response.encode())
 
     def do_POST(s):
@@ -102,11 +97,13 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         print('done')
 
         features_path = 'data'
-        features, info = get_features(features_path, target_image)
+
+        features, info = get_features(features_path, target_image, inception_model)
 
         # calculate the distance for all features
         print('calculating the distance for all features')
-        distances = pairwise_distances(features['feature_list'], features['target_feature'], metric=euclidean, n_jobs=post_data['num_cores'])
+        num_cores = 8
+        distances = pairwise_distances(features['feature_list'], features['target_feature'], metric=euclidean, n_jobs=num_cores)
         print('done')
         # sort by distance, ascending
         lowest_distances = sorted(zip(distances, info['source_video'], info['shot_begin_frame'], info['frame_timestamp'], info['frame_path']))
@@ -133,9 +130,9 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             {
                  'distance': dis.tolist(),
                  'source_video': sv,
-                 'shot_begin_frame': sbf,
+                 'shot_begin_frame': str(datetime.timedelta(seconds=int(sbf) / 1000)),
                  'frame_timestamp': str(datetime.timedelta(seconds=int(ft) / 1000)),
-                 'frame_path': str(datetime.timedelta(seconds=int(sbf) / 1000))
+                 'frame_path': fp
             }
             for dis, sv, sbf, ft, fp in filtered_distances]
         )

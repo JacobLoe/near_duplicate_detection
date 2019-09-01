@@ -93,7 +93,7 @@ def write_to_html(distances, results_path, num_results, target_image):
         ft = str(datetime.timedelta(seconds=int(ft)/1000))
         sbf = str(datetime.timedelta(seconds=int(sbf)/1000))
 
-        # write an entry for the table, format is: frame_path, source_video, frame_timestamp, distance
+        # write an entry for the table, format is: frame_path, source_video, frame_timestamp, shot_begin_frame, distance
         html_str += str('<tr><td><img src="{}"></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(fp, sv, ft, sbf, dis))
 
     html_str += '</table></html>'

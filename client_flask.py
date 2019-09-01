@@ -2,18 +2,35 @@ import os
 from flask import Flask, flash, request, redirect, url_for
 from flask import send_from_directory
 from werkzeug.utils import secure_filename
+from flask_table import Table, Col
 
 import requests
 from PIL import Image
 from io import BytesIO
 import base64
-
-import tensorflow as tf
-graph = tf.get_default_graph()
 ##########################################################################
 
 UPLOAD_FOLDER = ''
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
+
+
+# declare a table class
+class ItemTable(Table):
+    frame_path = Col('frame_path')
+    source_video = Col('source_video')
+    frame_timestamp = Col('frame_timestamp')
+    shot_begin_frame = Col('shot_begin_frame')
+    distance = Col('distance')
+
+
+class Item(object):
+    def __init__(self, frame_path, source_video, frame_timestamp, shot_begin_frame, distance):
+        self.frame_path = frame_path
+        self.source_video = source_video
+        self.frame_timestamp = frame_timestamp
+        self.shot_begin_frame = shot_begin_frame
+        self.distance = distance
+
 
 class PrefixMiddleware(object):
 
@@ -59,7 +76,9 @@ def upload_file():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            
+
+            # save the uploaded image with a .. name and the correct file extension, to only ever save one image on disk
+            filename = ('target_image' + os.path.splitext(filename)[1])
             target_image = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(target_image)
 
@@ -71,7 +90,7 @@ def upload_file():
 
             html_path = os.path.join(app.config['UPLOAD_FOLDER'], 'results.html')
 
-            url = 'http://localhost:8000/'
+            url = 'http://localhost:9000/'
 
             server_options = {}
             try:
@@ -91,21 +110,28 @@ def upload_file():
             headers = {"Content-Type": "application/json", "Accept": "application/json"}
 
             # call the main function of the query
-            num_cores = 8
-            num_results = 30
-            with graph.as_default():
+            num_results = 5
+            response = session.post(url, headers=headers, json={
+                'target_image': target_image,
+                'num_results': num_results,
+            })
 
-                response = session.post(url, headers=headers, json={
-                    'target_image': target_image,
-                    'num_results': num_results,
-                    'num_cores': num_cores
-                })
+            output = response.json()
 
-                output = response.json()
+            # get the results from the server as a list of dicts
+            results = output.get('data')
+            print(results)
 
-                # get the results from the server
-                concepts = output.get('data')
-            return upload_image #redirect(url_for('uploaded_file', filename=html_path))
+            items = [Item('img src="{}"'.format(row['frame_path']),
+                          row['source_video'],
+                          row['frame_timestamp'],
+                          row['shot_begin_frame'],
+                          row['distance'])
+                     for row in results]
+
+            table = ItemTable(items)
+
+            return table.__html__()
     return '''
     <!doctype html>
     <title>Upload new File</title>
@@ -119,9 +145,8 @@ def upload_file():
 
 @app.route('/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'],
-                               filename)
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=80)
+    app.run(debug=False, host='0.0.0.0', port=8000)
