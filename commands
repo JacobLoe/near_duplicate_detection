@@ -1,11 +1,11 @@
 #docker server_ndd.py
 docker build -f Dockerfile_server_ndd -t jacobloe/server_ndd:0.1 .
-docker run --rm -it -v $(pwd)/static/features_videos:/root/data -p 8000:9000 jacobloe/server_ndd:0.1
+docker run --rm -it -v $(pwd)/static/features_videos:/root/data -p 9000:9000 --network ndd_subnet --name server_ndd jacobloe/server_ndd:0.1
 
 
 #docker client_flask.py
 docker build -f Dockerfile_client_flask -t jacobloe/client_flask:0.1 .
-docker run --rm -it -p 5000:80 jacobloe/client_flask:0.1
+docker run --rm -it -p 80:8000 --network ndd_subnet --name client_flask jacobloe/client_flask:0.1
 
 
 docker network create --driver bridge ndd_bridge

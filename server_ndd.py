@@ -78,7 +78,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         length = int(s.headers['Content-Length'])
         body = s.rfile.read(length).decode('utf-8')
         if s.headers['Content-type'] == 'application/json':
-            post_data = json.loads(body)			# enthält alle daten, target_image usw. die der server braucht
+            post_data = json.loads(body)
         else:
             post_data = urllib.parse.parse_qs(body)
 
@@ -94,7 +94,9 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         target_image = target_image.resize((image_scale, image_scale))
         target_image.save('target_image.png')
         target_image = np.array(target_image)
-        print('done')
+        if np.shape(target_image) == (image_scale, image_scale, 4):
+            target_image = target_image[..., :3]
+        print('finished loading target image')
 
         features_path = 'data'
 
@@ -104,7 +106,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         print('calculating the distance for all features')
         num_cores = 8
         distances = pairwise_distances(features['feature_list'], features['target_feature'], metric=euclidean, n_jobs=num_cores)
-        print('done')
+        print('calculated all distances')
         # sort by distance, ascending
         lowest_distances = sorted(zip(distances, info['source_video'], info['shot_begin_frame'], info['frame_timestamp'], info['frame_path']))
 
