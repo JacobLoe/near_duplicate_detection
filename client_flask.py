@@ -2,56 +2,35 @@ import os
 from flask import Flask, flash, request, redirect, url_for
 from flask import send_from_directory
 from werkzeug.utils import secure_filename
-from flask_table import Table, Col
 
 import requests
 from PIL import Image
 from io import BytesIO
 import base64
-import numpy as np
-import datetime
 ##########################################################################
 
 UPLOAD_FOLDER = ''
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
 
-# def write_html_str(results, target_image):
-#
-#     # write to html
-#     html_str = '<!DOCTYPE html><html lang="en"><table cellspacing="20"><tr><th>thumbnail</th><th>videofile</th><th>frame timestamp</th><th>shot_beginning</th><th>distance</th></tr>'
-#     # add the target image to the html
-#     html_str += str('<tr><td><img src="{}"></td></tr>'.format(target_image))
-#
-#     # append the found images to the html
-#     for dis, sv, sbf, ft, fp in distances:
-#         # convert ms timestamp to hh:mm:ss
-#         ft = str(datetime.timedelta(seconds=int(ft)/1000))
-#         sbf = str(datetime.timedelta(seconds=int(sbf)/1000))
-#
-#         # write an entry for the table, format is: frame_path, source_video, frame_timestamp, shot_begin_frame, distance
-#         html_str += str('<tr><td><img src="{}"></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(fp, sv, ft, sbf, dis))
-#
-#     html_str += '</table></html>'
-#     return html_str
+def write_html_str(results, target_image):
 
+    # write to html
+    html_str = '<!DOCTYPE html><html lang="en"><table cellspacing="20"><tr><th>thumbnail</th><th>videofile</th><th>frame timestamp</th><th>shot_beginning</th><th>distance</th></tr>'
+    # add the target image to the html
+    html_str += str('<tr><td><img src="{}"></td></tr>'.format(target_image))
 
-# declare a table class
-class ItemTable(Table):
-    frame_path = Col('frame_path')
-    source_video = Col('source_video')
-    frame_timestamp = Col('frame_timestamp')
-    shot_begin_frame = Col('shot_begin_frame')
-    distance = Col('distance')
+    # append the found images to the html
+    for row in results:
+        # write an entry for the table, format is: frame_path, source_video, frame_timestamp, shot_begin_frame, distance
+        html_str += str('<tr><td><img src="{}"></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(row['frame_path'],
+                                                                                                              row['source_video'],
+                                                                                                              row['frame_timestamp'],
+                                                                                                              row['shot_begin_frame'],
+                                                                                                              row['distance']))
 
-
-class Item(object):
-    def __init__(self, frame_path, source_video, frame_timestamp, shot_begin_frame, distance):
-        self.frame_path = frame_path
-        self.source_video = source_video
-        self.frame_timestamp = frame_timestamp
-        self.shot_begin_frame = shot_begin_frame
-        self.distance = distance
+    html_str += '</table></html>'
+    return html_str
 
 
 class PrefixMiddleware(object):
@@ -75,11 +54,22 @@ app = Flask(__name__)
 app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix='/imagesearch')
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['SECRET_KEY'] = 'ndd'
 
 
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# check whether the submitted variable is an integer
+def allowed_num_results(num):
+    try:
+        int(num)
+        return True
+    except:
+        print('The submitted variable is not a valid number')
+        return False
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -90,20 +80,27 @@ def upload_file():
             flash('No file part')
             return redirect(request.url)
         file = request.files['file']
+
+        num_results = request.form.get('textbox')
+        print(num_results)
         # if user does not select file, browser also
         # submits an empty part without filename
         if file.filename == '':
             flash('No selected file')
             return redirect(request.url)
-        if file and allowed_file(file.filename):
+        # if no number of results is submitted, a default of 30 is returned
+        if num_results == '':
+            num_results = 30
+        if file and allowed_file(file.filename) and allowed_num_results(num_results):
+            num_results = int(num_results)
             filename = secure_filename(file.filename)
 
             # save the uploaded image with a .. name and the correct file extension, to only ever save one image on disk
             filename = ('target_image' + os.path.splitext(filename)[1])
-            target_image = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(target_image)
+            target_image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(target_image_path)
 
-            target_image = Image.open(target_image)
+            target_image = Image.open(target_image_path)
             buf = BytesIO()
             target_image.save(buf, 'PNG')
             target_image = buf.getvalue()
@@ -129,7 +126,6 @@ def upload_file():
             headers = {"Content-Type": "application/json", "Accept": "application/json"}
 
             # call the main function of the query
-            num_results = 1
             response = session.post(url, headers=headers, json={
                 'target_image': target_image,
                 'num_results': num_results,
@@ -139,24 +135,16 @@ def upload_file():
 
             # get the results from the server as a list of dicts
             results = output.get('data')
-            print(results)
 
-            items = [Item(row['frame_path'],
-                          row['source_video'],
-                          row['frame_timestamp'],
-                          row['shot_begin_frame'],
-                          row['distance'])
-                     for row in results]
-
-            table = ItemTable(items)
-            print(table.__html__())
-            return table.__html__()
+            html_table = write_html_str(results, target_image_path)
+            return html_table
     return '''
     <!doctype html>
     <title>Upload new File</title>
     <h1>Upload new File</h1>
     <form method=post enctype=multipart/form-data>
       <input type=file name=file>
+      <textarea name="textbox"></textarea>
       <input type=submit value=Upload>
     </form>
     '''

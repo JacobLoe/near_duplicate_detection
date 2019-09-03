@@ -1,5 +1,4 @@
 Flask==1.0.2
-flask_table
 pillow
 argparse
 requests

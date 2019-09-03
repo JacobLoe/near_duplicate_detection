@@ -8,7 +8,7 @@ RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_client_fla
 
 COPY client_flask.py /root
 
-EXPOSE 8000
+EXPOSE 80
 
 WORKDIR /root
 

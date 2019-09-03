@@ -5,7 +5,7 @@ docker run --rm -it -v $(pwd)/static/features_videos:/root/data -p 9000:9000 --n
 
 #docker client_flask.py
 docker build -f Dockerfile_client_flask -t jacobloe/client_flask:0.1 .
-docker run --rm -it -p 80:8000 --network ndd_subnet --name client_flask jacobloe/client_flask:0.1
+docker run --rm -it -v $(pwd)/static/features_videos:/root/data -p 8000:80 --network ndd_subnet --name client_flask jacobloe/client_flask:0.1
 
 
-docker network create --driver bridge ndd_bridge
+docker network create --driver bridge ndd_subnet
