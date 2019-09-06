@@ -101,12 +101,13 @@ def upload_file():
             file.save(target_image_path)
 
             target_image = Image.open(target_image_path)
+            target_image = target_image.convert('RGB')
             buf = BytesIO()
             target_image.save(buf, 'PNG')
             target_image = buf.getvalue()
             target_image = base64.encodebytes(target_image).decode('ascii')
 
-            url = 'http://localhost:9000/'
+            url = 'http://server_ndd:9000/' # the name assigned in the docker subnet
 
             server_options = {}
             try:
@@ -144,7 +145,7 @@ def upload_file():
     <h1>Upload new File</h1>
     <form method=post enctype=multipart/form-data>
       <input type=file name=file>
-      <textarea name="textbox"></textarea>
+      <textarea name="textbox"></textarea> 
       <input type=submit value=Upload>
     </form>
     '''

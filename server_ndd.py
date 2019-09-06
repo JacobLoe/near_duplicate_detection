@@ -94,11 +94,9 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         target_image = target_image.resize((image_scale, image_scale))
         target_image.save('target_image.png')
         target_image = np.array(target_image)
-        if np.shape(target_image) == (image_scale, image_scale, 4):
-            target_image = target_image[..., :3]
         print('finished loading target image')
 
-        features_path = 'data'
+        features_path = 'static'
 
         features, info = get_features(features_path, target_image, inception_model)
 
