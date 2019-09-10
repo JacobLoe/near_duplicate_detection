@@ -1,0 +1,29 @@
+# build
+docker build -f Dockerfile_shot_detection -t jacobloe/shot_detection:0.1 .
+docker build -f Dockerfile_extract_images -t jacobloe/extract_images:0.1 .
+docker build -f Dockerfile_extract_features -t jacobloe/extract_features:0.1 .
+docker build -f Dockerfile_flask_query -t jacobloe/flask_query:0.1 .
+
+# run
+# the features_path needs the static in the beginning to work with flask
+# :5000 has to be added to the adress in the browser,flask omits it
+docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_FEATURES:/data jacobloe/shot_detection:0.1 /video /data/
+docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_FEATURES:/data jacobloe/extract_images:0.1 /video /data/
+docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/data  jacobloe/extract_features:0.1 /data/
+
+# http://0.0.0.0:5000/imagesearch/
+docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/root/static -p 5000:80 jacobloe/flask_query:0.1
+
+#######################################################################################################################################
+
+#create a subnet
+docker network create --driver bridge ndd_subnet
+
+#docker server_ndd.py
+docker build -f Dockerfile_server_ndd -t jacobloe/server_ndd:0.1 .
+docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/root/static -p 9000:9000 --network ndd_subnet --name server_ndd jacobloe/server_ndd:0.1
+
+#docker client_flask.py
+docker build -f Dockerfile_client_flask -t jacobloe/client_flask:0.1 .
+docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/root/static -p 8000:80 --network ndd_subnet --name client_flask jacobloe/client_flask:0.1
+
