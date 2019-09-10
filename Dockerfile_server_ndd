@@ -1,0 +1,18 @@
+FROM python:3.6.8-stretch
+
+ENV DEBIAN_FRONTEND noninteractive
+
+COPY requirements_server_ndd.txt /root
+
+RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_server_ndd.txt
+
+COPY server_ndd.py /root
+COPY extract_features.py /root
+
+EXPOSE 9000
+
+VOLUME "/data"
+
+WORKDIR /root
+
+CMD ["python3", "server_ndd.py"]

@@ -1,4 +1,3 @@
-Flask==1.0.2
 opencv-python
 numpy
 tqdm
@@ -9,3 +8,4 @@ scipy
 pillow
 argparse
 sklearn
+tensorflow
