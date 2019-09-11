@@ -20,7 +20,8 @@ if __name__ == "__main__":
                           for p in list_videos_path]  # create a list of paths where all the data (shot-detection,frames,features) are saved to
 
     done = 0
-    while done != len(list_features_path):  # repeat until all movies in the list have been processed correctly
+    while done < len(list_features_path):  # repeat until all movies in the list have been processed correctly
+        print('-------------------------------------------------------')
         for v_path, f_path in zip(list_videos_path, list_features_path):
             # create a folder for the shot-detection results
             if not os.path.isdir(f_path) and not os.path.isfile(os.path.join(f_path, '.done')):

@@ -49,7 +49,8 @@ def main(videos_path, features_path):
                          for p in list_videos_path]  # create a list of paths where all the data (shot-detection,frames,features) are saved to
 
     done = 0
-    while done != len(list_features_path):  # repeat until all movies in the list have been processed correctly
+    while done < len(list_features_path):  # repeat until all movies in the list have been processed correctly
+        print('-------------------------------------------------------')
         for v_path, f_path in tqdm(zip(list_videos_path, list_features_path), total=len(list_videos_path)):
             frames_dir = os.path.join(f_path, 'frames')
             if not os.path.isdir(frames_dir) and not os.path.isfile(os.path.join(frames_dir, '.done')):
