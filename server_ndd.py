@@ -20,12 +20,9 @@ logger = logging.getLogger(__name__)
 inception_model = load_model()
 
 
-def get_features(features_path, target_image, model):
+def get_features(features_path):
 
-    print('extract feature for target image')
-    target_feature = extract_features(model, target_image)
-    print('done')
-
+    print('get features')
     source_video = []
     shot_begin_frame = []
     frame_timestamp = []
@@ -53,12 +50,11 @@ def get_features(features_path, target_image, model):
 
     features = {'feature_list': feature_list}
     info = {'source_video': source_video, 'shot_begin_frame': shot_begin_frame, 'frame_timestamp': frame_timestamp, 'frame_path': frame_path}
+    print('done')
     return features, info
 
 
-features_path = 'static'
-
-features_server, info_server = get_features(features_path, inception_model)
+features_server, info_server = get_features('static')
 
 
 class RESTHandler(http.server.BaseHTTPRequestHandler):
@@ -101,11 +97,14 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         target_image = np.array(target_image)
         print('finished loading target image')
 
+        print('extract feature for target image')
+        target_feature = extract_features(inception_model, target_image)
+        print('done')
 
         # calculate the distance for all features
         print('calculating the distance for all features')
         num_cores = 8
-        distances = pairwise_distances(features_server['feature_list'], target_image, metric=euclidean, n_jobs=num_cores)
+        distances = pairwise_distances(features_server['feature_list'], target_feature, metric=euclidean, n_jobs=num_cores)
         print('calculated all distances')
         # sort by distance, ascending
         lowest_distances = sorted(zip(distances, info_server['source_video'], info_server['shot_begin_frame'], info_server['frame_timestamp'], info_server['frame_path']))
