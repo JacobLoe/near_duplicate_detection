@@ -55,7 +55,7 @@ app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix='/imagesearch')
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = 'ndd'
-
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -98,7 +98,17 @@ def upload_file():
             # save the uploaded image with a .. name and the correct file extension, to only ever save one image on disk
             filename = ('target_image' + os.path.splitext(filename)[1])
             target_image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.isfile(target_image_path):
+                print('delete')
+                os.remove(target_image_path)
+
+            # save the image, open it with pillow, resize, save it again
+            # this way the image displayed is the at a reasonable size
             file.save(target_image_path)
+            target_image = Image.open(target_image_path)
+            target_image = target_image.convert('RGB')
+            target_image = target_image.resize((299, 299))
+            target_image.save(target_image_path)
 
             target_image = Image.open(target_image_path)
             target_image = target_image.convert('RGB')
@@ -107,7 +117,8 @@ def upload_file():
             target_image = buf.getvalue()
             target_image = base64.encodebytes(target_image).decode('ascii')
 
-            url = 'http://server_ndd:9000/' # the name assigned in the docker subnet
+            url = 'http://localhost:9000/' # the name assigned in the docker subnet
+            # url = 'http://server_ndd:9000/' # the name assigned in the docker subnet
 
             server_options = {}
             try:
