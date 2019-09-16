@@ -82,7 +82,6 @@ def upload_file():
         file = request.files['file']
 
         num_results = request.form.get('textbox')
-        print(num_results)
         # if user does not select file, browser also
         # submits an empty part without filename
         if file.filename == '':
@@ -99,7 +98,6 @@ def upload_file():
             filename = ('target_image' + os.path.splitext(filename)[1])
             target_image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             if os.path.isfile(target_image_path):
-                print('delete')
                 os.remove(target_image_path)
 
             # save the image, open it with pillow, resize, save it again
@@ -117,8 +115,8 @@ def upload_file():
             target_image = buf.getvalue()
             target_image = base64.encodebytes(target_image).decode('ascii')
 
-            url = 'http://localhost:9000/' # the name assigned in the docker subnet
-            # url = 'http://server_ndd:9000/' # the name assigned in the docker subnet
+            # url = 'http://localhost:9000/' # the name assigned in the docker subnet
+            url = 'http://server_ndd:9000/' # the name assigned in the docker subnet
 
             server_options = {}
             try:
