@@ -17,6 +17,11 @@ import base64
 import numpy as np
 
 logger = logging.getLogger(__name__)
+ch = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
 inception_model = load_model()
 
 
@@ -107,7 +112,9 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         distances = pairwise_distances(features_server['feature_list'], target_feature, metric=euclidean, n_jobs=num_cores)
         logger.info('calculated all distances')
         # sort by distance, ascending
+        logger.info('sorting distances')
         lowest_distances = sorted(zip(distances, info_server['source_video'], info_server['shot_begin_frame'], info_server['frame_timestamp'], info_server['frame_path']))
+        logger.info('distances are sorted')
 
         num_results = post_data['num_results']
         filtered_distances = []
@@ -116,16 +123,18 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         index = 0
         aa = []
 
+        logger.info('filter distances')
         while (hits < num_results) and (index < (len(lowest_distances)-1)):  # repeat filtering until num_results results are found or there are no distances in the list anymore
             # if the current frame and the following frame are from the same video and the same shot, skip the current frame,
-            if (lowest_distances[index][2], lowest_distances[index[1]]) in shot_hits:
+            if (lowest_distances[index][2], lowest_distances[index][1]) in shot_hits:
                 index += 1
             else:
-                aa.append((lowest_distances[index][2], lowest_distances[index[1]]) in shot_hits)
-                shot_hits.add(lowest_distances[index][2], lowest_distances[index[1]])
+                aa.append((lowest_distances[index][2], lowest_distances[index][1]) in shot_hits)
+                shot_hits.add(lowest_distances[index][2], lowest_distances[index][1])
                 filtered_distances.append(lowest_distances[index])
                 hits += 1
                 index += 1
+        logger.info('finished filtering')
         # print(aa)
         # print(shot_hits)
         # print('len_shot_hits: ', len(shot_hits))
