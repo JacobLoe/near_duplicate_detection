@@ -129,8 +129,8 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             if (lowest_distances[index][2], lowest_distances[index][1]) in shot_hits:
                 index += 1
             else:
-                aa.append((lowest_distances[index][2], lowest_distances[index][1]) in shot_hits)
-                shot_hits.add(lowest_distances[index][2], lowest_distances[index][1])
+                # aa.append((lowest_distances[index][2], lowest_distances[index][1]) in shot_hits)
+                shot_hits.add((lowest_distances[index][2], lowest_distances[index][1]))
                 filtered_distances.append(lowest_distances[index])
                 hits += 1
                 index += 1
