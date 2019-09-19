@@ -7,6 +7,10 @@ import requests
 from PIL import Image
 from io import BytesIO
 import base64
+import hashlib
+from functools import partial
+import time
+
 ##########################################################################
 
 UPLOAD_FOLDER = ''
@@ -72,6 +76,13 @@ def allowed_num_results(num):
         return False
 
 
+def md5sum(filename):
+    with open(filename, mode='rb') as f:
+        d = hashlib.md5()
+        for buf in iter(partial(f.read, 128), b''):
+            d.update(buf)
+    return d.hexdigest()
+
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -95,7 +106,8 @@ def upload_file():
             filename = secure_filename(file.filename)
 
             # save the uploaded image with a .. name and the correct file extension, to only ever save one image on disk
-            filename = ('target_image' + os.path.splitext(filename)[1])
+            # filename = ('target_image' + os.path.splitext(filename)[1])
+            filename = str(time.time()) + os.path.splitext(filename)[1]
             target_image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             if os.path.isfile(target_image_path):
                 os.remove(target_image_path)

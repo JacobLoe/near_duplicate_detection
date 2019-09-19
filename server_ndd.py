@@ -88,43 +88,50 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         # if not os.path.exists(CACHE_DIR):
         #     os.makedirs(CACHE_DIR)
 
-        print('load target_image')
+        logger.info('load target_image')
         image_scale = 299
         target_image = post_data['target_image']
         target_image = Image.open(BytesIO(base64.b64decode(target_image)))
         target_image = target_image.resize((image_scale, image_scale))
         target_image.save('target_image.png')
         target_image = np.array(target_image)
-        print('finished loading target image')
+        logger.info('finished loading target image')
 
-        print('extract feature for target image')
+        logger.info('extract feature for target image')
         target_feature = extract_features(inception_model, target_image)
-        print('done')
+        logger.info('done')
 
         # calculate the distance for all features
-        print('calculating the distance for all features')
+        logger.info('calculating the distance for all features')
         num_cores = 8
         distances = pairwise_distances(features_server['feature_list'], target_feature, metric=euclidean, n_jobs=num_cores)
-        print('calculated all distances')
+        logger.info('calculated all distances')
         # sort by distance, ascending
         lowest_distances = sorted(zip(distances, info_server['source_video'], info_server['shot_begin_frame'], info_server['frame_timestamp'], info_server['frame_path']))
 
         num_results = post_data['num_results']
         filtered_distances = []
         hits = 0    # hits is incremented whenever a distance is added to filtered_distances, if hits is higher than num_results
-        shot_hits = []  # saves the name of the shots that have been added to filtered_distances
+        shot_hits = set()  # saves the name of the shots that have been added to filtered_distances
         index = 0
-        while (hits < num_results) and (index < (len(lowest_distances)-2)):  # repeat filtering until num_results results are found or there are no distances in the list anymore
+        aa = []
+
+        while (hits < num_results) and (index < (len(lowest_distances)-1)):  # repeat filtering until num_results results are found or there are no distances in the list anymore
             # if the current frame and the following frame are from the same video and the same shot, skip the current frame,
-            # otherwise add the distance to the list, increment the
-            if (lowest_distances[index][1] == lowest_distances[index + 1][1]) and (lowest_distances[index][2] in shot_hits):
-                # print(index)
+            if (lowest_distances[index][2], lowest_distances[index[1]]) in shot_hits:
                 index += 1
             else:
-                shot_hits.append(lowest_distances[index][2])
+                aa.append((lowest_distances[index][2], lowest_distances[index[1]]) in shot_hits)
+                shot_hits.add(lowest_distances[index][2], lowest_distances[index[1]])
                 filtered_distances.append(lowest_distances[index])
                 hits += 1
                 index += 1
+        # print(aa)
+        # print(shot_hits)
+        # print('len_shot_hits: ', len(shot_hits))
+        # print('hits: ', hits)
+        # print('len_dists: ', len(lowest_distances[0]))
+        # print('index: ', index)
 
         concepts = []
         concepts.extend([
@@ -138,7 +145,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             for dis, sv, sbf, ft, fp in filtered_distances]
         )
 
-        logger.debug(concepts)
+        # logger.debug(concepts)
         s.send_response(200)
         s.send_header("Content-type", "application/json")
         s.end_headers()
