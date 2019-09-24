@@ -128,7 +128,7 @@ def upload_file():
             target_image = base64.encodebytes(target_image).decode('ascii')
 
             # url = 'http://localhost:9000/' # the name assigned in the docker subnet
-            url = 'http://server_ndd:9000/' # the name assigned in the docker subnet
+            url = 'http://server_ndd:9000/'  # the name assigned in the docker subnet
 
             server_options = {}
             try:
