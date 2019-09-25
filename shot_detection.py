@@ -8,7 +8,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("videos_dir", help="the directory where the video-files are stored")
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
-    args=parser.parse_args()
+    args = parser.parse_args()
 
     list_videos_path = glob.glob(os.path.join(args.videos_dir, '**/*.mp4'), recursive=True)  # get the list of videos in videos_dir
 

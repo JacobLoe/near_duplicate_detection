@@ -15,12 +15,14 @@ from PIL import Image
 from io import BytesIO
 import base64
 import numpy as np
+import pickle
 
 logger = logging.getLogger(__name__)
 ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+logging.basicConfig(level=logging.DEBUG)
 
 inception_model = load_model()
 
@@ -59,19 +61,28 @@ def get_features(features_path):
     return features, info
 
 
-features_server, info_server = get_features('static')
+pickle_features = 'static/features.pickle'
+if os.path.isfile(pickle_features):
+    logger.info('load pickled features')
+    with open(pickle_features, 'rb') as handle:
+        features_server, info_server = pickle.load(handle)
+    logger.info('done')
+else:
+    features_server, info_server = get_features('static')
+    logger.info('save features with pickle')
+    with open(pickle_features, 'wb') as handle:
+        pickle.dump([features_server, info_server], handle)
+    logger.info('done')
 
 
 class RESTHandler(http.server.BaseHTTPRequestHandler):
 
     def do_HEAD(s):
-        print('do_HEAD')
         s.send_response(200)
         s.send_header("Content-type", "application/json")
         s.end_headers()
 
     def do_GET(s):
-        print('do_GET')
         s.send_response(200)
         s.send_header("Content-type", "application/json")
         s.end_headers()
@@ -80,18 +91,12 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         s.wfile.write(response.encode())
 
     def do_POST(s):
-        print('do_POST')
         length = int(s.headers['Content-Length'])
         body = s.rfile.read(length).decode('utf-8')
         if s.headers['Content-type'] == 'application/json':
             post_data = json.loads(body)
         else:
             post_data = urllib.parse.parse_qs(body)
-
-        # CACHE_DIR = "/var/ndd/cache"
-        # # create cachedir
-        # if not os.path.exists(CACHE_DIR):
-        #     os.makedirs(CACHE_DIR)
 
         logger.info('load target_image')
         image_scale = 299
@@ -111,6 +116,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         num_cores = 8
         distances = pairwise_distances(features_server['feature_list'], target_feature, metric=euclidean, n_jobs=num_cores)
         logger.info('calculated all distances')
+
         # sort by distance, ascending
         logger.info('sorting distances')
         lowest_distances = sorted(zip(distances, info_server['source_video'], info_server['shot_begin_frame'], info_server['frame_timestamp'], info_server['frame_path']))
@@ -129,18 +135,11 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             if (lowest_distances[index][2], lowest_distances[index][1]) in shot_hits:
                 index += 1
             else:
-                # aa.append((lowest_distances[index][2], lowest_distances[index][1]) in shot_hits)
                 shot_hits.add((lowest_distances[index][2], lowest_distances[index][1]))
                 filtered_distances.append(lowest_distances[index])
                 hits += 1
                 index += 1
         logger.info('finished filtering')
-        # print(aa)
-        # print(shot_hits)
-        # print('len_shot_hits: ', len(shot_hits))
-        # print('hits: ', hits)
-        # print('len_dists: ', len(lowest_distances[0]))
-        # print('index: ', index)
 
         concepts = []
         concepts.extend([
@@ -171,7 +170,6 @@ if __name__ == '__main__':
     HOST_NAME = ''
     PORT_NUMBER = 9000
 
-    logging.basicConfig(level=logging.DEBUG)
     server_class = http.server.HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), RESTHandler)
     logger.info("Starting dummy REST server on %s:%d", HOST_NAME, PORT_NUMBER)
