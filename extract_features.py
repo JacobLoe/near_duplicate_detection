@@ -1,9 +1,10 @@
 import os
-import cv2
+import shutil
 import argparse
 import numpy as np
 from tqdm import tqdm
 import glob
+import cv2
 
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.applications.inception_resnet_v2 import preprocess_input
@@ -36,8 +37,8 @@ def main(features_path):
 
     model_name = 'features_InceptionResNetV2_avgpoolLayer'
 
-    images = os.path.join(features_path, '*/*/frames/*/*.png')
-    list_images_path = glob.glob(images)  # get the list of videos in videos_dir
+    images = os.path.join(features_path,  '**/frames/*/*.png')
+    list_images_path = glob.glob(images, recursive=True)  # get the list of videos in videos_dir
     cp = os.path.commonprefix(list_images_path)  # get the common dir between paths found with glob
    
     list_features_path = [os.path.split(                # split of the shots folder
@@ -46,22 +47,51 @@ def main(features_path):
                                 os.path.join(features_path, os.path.relpath(p, cp))
                             )[0])[0])[0]
                           for p in list_images_path]
-
+    # print(list_features_path)
     model = load_model()
+    done = 0
+    while done < len(list_features_path):  # repeat until all frames in the list have been processed correctly
+        if done != 0:
+            done = 0
+        print('-------------------------------------------------------')
+        for i_path, f_path in tqdm(zip(list_images_path, list_features_path), total=len(list_images_path)):
+        # for i_path, f_path in zip(list_images_path, list_features_path):
+            feature_name = os.path.split(i_path)[1][:-4]  # get the name of the image, remove the file extension
 
-    for i_path, f_path in tqdm(zip(list_images_path, list_features_path), total=len(list_images_path)):
+            shot = os.path.split(os.path.split(i_path)[0])[1]  # get the name of the shot for the image
+            fp = os.path.join(f_path, model_name, shot)
+            path = os.path.join(fp, feature_name)  # specify the path to which the feature is saved, the name is the same as the image (w/o the file-extension)
+            path = path + '.npy'
+            done_name = '.done' + feature_name
+            done_path = os.path.join(fp, done_name)
 
-        feature_name = os.path.split(i_path)[1][:-4]  # get the name of the image, remove the file extension
-        shot = os.path.split(os.path.split(i_path)[0])[1]  # get the name of the shot for the image
+            # print((not os.path.isfile(path) and not os.path.isfile(done_path)),
+            #       (os.path.isfile(path) and os.path.isfile(done_path)),
+            #       (os.path.isfile(path) and not os.path.isfile(done_path)),
+            #       (not os.path.isfile(path) and os.path.isfile(done_path)))
+            # print(path)
+            # print(done_path)
+            # print('--------')
 
-        fp = os.path.join(f_path, model_name, shot)
-        if not os.path.isdir(fp):  # create the directory to save the features
-            os.makedirs(fp)
-       
-        frame = cv2.imread(i_path)  # read the image from disc
-        feature = extract_features(model, frame)  # run the model on the image
-        path = os.path.join(fp, feature_name)  # specify the path to which the feature is saved, the name is the same as the image (w/o the file-extension)
-        np.save(path, feature)  # save the feature to disc
+            if not os.path.isfile(path) and not os.path.isfile(done_path):  # if neither the feature nor a .done-file exist, start extracting the feature
+                if not os.path.isdir(fp):  # create the directory to save the features
+                    os.makedirs(fp)
+
+                frame = cv2.imread(i_path)  # read the frame from disc
+                feature = extract_features(model, frame)  # run the model on the frame
+                np.save(path, feature)  # save the feature to disc
+                # create a hidden file to signal that the feature-extraction for a frame is done
+                open(done_path, 'a').close()
+                done += 1  # count the instances of the feature-extraction done correctly
+            elif os.path.isfile(path) and os.path.isfile(done_path):    # if both files exist, do nothing
+                done += 1  # count the instances of the feature-extraction done correctly
+            # if either the feature or the .done-file don't exist, something went wrong
+            # the other file is deleted, so the process can be finished in the second iteration
+            elif os.path.isfile(path) and not os.path.isfile(done_path):
+                os.remove(path)
+            elif not os.path.isfile(path) and os.path.isfile(done_path):
+                os.remove(done_path)
+        print('feature-extraction was already done for {}/{} features'.format(done, len(list_features_path)))
 #########################################################################################################
 
 

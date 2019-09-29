@@ -1,4 +1,5 @@
 /static
+/0_static
 /test
 /test_images
 /__pycache__
@@ -9,3 +10,6 @@
 /target_image.jpg
 /alt
 /features
+/features_pickle
+/extract_features_old.py
+/feature_distance.py

@@ -17,12 +17,13 @@ import base64
 import numpy as np
 import pickle
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
-logging.basicConfig(level=logging.DEBUG)
+
 
 inception_model = load_model()
 
@@ -61,7 +62,7 @@ def get_features(features_path):
     return features, info
 
 
-pickle_features = 'static/features.pickle'
+pickle_features = 'features_pickle/features.pickle'
 if os.path.isfile(pickle_features):
     logger.info('load pickled features')
     with open(pickle_features, 'rb') as handle:
