@@ -15,4 +15,4 @@ VOLUME "/data"
 
 WORKDIR /root
 
-CMD ["python3", "server_ndd.py"]
+ENTRYPOINT ["python3", "server_ndd.py"]

@@ -16,14 +16,20 @@ from io import BytesIO
 import base64
 import numpy as np
 import pickle
+import argparse
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
+
 ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+logger.propagate = False    # prevent log messages from appearing twice
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--num_cores", type=int, default=8, help="specify the number cpu cores used for distance calculation, default value is 8")
+args = parser.parse_args()
 
 inception_model = load_model()
 
@@ -114,8 +120,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
         # calculate the distance for all features
         logger.info('calculating the distance for all features')
-        num_cores = 8
-        distances = pairwise_distances(features_server['feature_list'], target_feature, metric=euclidean, n_jobs=num_cores)
+        distances = pairwise_distances(features_server['feature_list'], target_feature, metric=euclidean, n_jobs=args.num_cores)
         logger.info('calculated all distances')
 
         # sort by distance, ascending
