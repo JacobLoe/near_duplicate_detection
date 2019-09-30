@@ -4,7 +4,7 @@ import urllib.parse
 import datetime
 import logging
 
-from scipy.spatial.distance import euclidean
+from scipy.spatial.distance import sqeuclidean
 from sklearn.metrics import pairwise_distances
 from extract_features import extract_features, load_model
 
@@ -120,7 +120,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
         # calculate the distance for all features
         logger.info('calculating the distance for all features')
-        distances = pairwise_distances(features_server['feature_list'], target_feature, metric=euclidean, n_jobs=args.num_cores)
+        distances = pairwise_distances(features_server['feature_list'], target_feature, metric=sqeuclidean, n_jobs=args.num_cores)
         logger.info('calculated all distances')
 
         # sort by distance, ascending
