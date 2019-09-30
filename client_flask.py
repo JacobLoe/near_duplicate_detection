@@ -145,7 +145,7 @@ def upload_file():
             # the response is what is sent to the server
             # Use a requests.session to use a KeepAlive connection to the server
             session = requests.session()
-            headers = {"Content-Type": "application/json", "Accept": "application/json"}
+            headers = {"Content-Type": "application/json", "Accept": "application/json", "Cache-Control": "no-cache, no-store", "Pragma": "no-cache"}
 
             # call the main function of the query
             response = session.post(url, headers=headers, json={
