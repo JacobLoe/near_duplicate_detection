@@ -8,6 +8,10 @@ from scipy.spatial.distance import sqeuclidean
 from sklearn.metrics import pairwise_distances
 from extract_features import extract_features, load_model
 
+from sklearn.metrics.pairwise import euclidean_distances
+import multiprocessing as mp
+import functools
+
 import os
 import glob
 from tqdm import tqdm
@@ -33,6 +37,10 @@ args = parser.parse_args()
 
 inception_model = load_model()
 
+
+def compute_batch(start_idx, X, Y, batch_size):
+    dists = euclidean_distances(X[start_idx:start_idx+batch_size], Y)
+    return dists
 
 def get_features(features_path):
 
@@ -120,7 +128,15 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
         # calculate the distance for all features
         logger.info('calculating the distance for all features')
-        distances = pairwise_distances(features_server['feature_list'], target_feature, metric=sqeuclidean, n_jobs=args.num_cores)
+        # distances = pairwise_distances(features_server['feature_list'], target_feature, metric=sqeuclidean, n_jobs=args.num_cores)
+        print(np.shape(features_server['feature_list']))
+        f_size = np.shape(features_server['feature_list'])[0]
+        compute_batch_ = functools.partial(compute_batch, X=features_server['feature_list'], Y=target_feature, batch_size=int(f_size / args.num_cores))
+
+        print("computing")
+        with mp.Pool(mp.cpu_count()) as pool:
+            distances = list(pool.imap(compute_batch_, [idx for idx in range(0, f_size, int(f_size / args.num_cores))]))
+        distances = np.concatenate(distances)
         logger.info('calculated all distances')
 
         # sort by distance, ascending
