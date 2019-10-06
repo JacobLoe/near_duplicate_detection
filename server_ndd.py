@@ -32,7 +32,7 @@ logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--num_cores", type=int, default=8, help="specify the number cpu cores used for distance calculation, default value is 8")
+parser.add_argument("--num_cores", type=int, default=48, help="specify the number cpu cores used for distance calculation, default value is 48")
 args = parser.parse_args()
 
 inception_model = load_model()
