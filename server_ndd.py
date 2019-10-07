@@ -141,7 +141,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
         # sort by distance, ascending
         logger.info('sorting distances')
-        lowest_distances = sorted(zip(distances, info_server['source_video'], info_server['shot_begin_frame'], info_server['frame_timestamp'], info_server['frame_path']))
+        lowest_distances = sorted(zip(distances, info_server['source_video'], info_server['shot_begin_frame'], info_server['frame_timestamp'], info_server['frame_path']), key=lambda d: d[0])
         logger.info('distances are sorted')
 
         num_results = post_data['num_results']
