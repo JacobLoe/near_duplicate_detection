@@ -38,13 +38,13 @@ args = parser.parse_args()
 inception_model = load_model()
 
 
-def compute_batch(start_idx, X, Y, batch_size):
-    dists = euclidean_distances(X[start_idx:start_idx+batch_size], Y)
+def compute_batch(batch, Y):
+    dists = euclidean_distances(batch, Y)
     return dists
 
 def get_features(features_path):
 
-    print('get features')
+    logger.info('get features')
     source_video = []
     shot_begin_frame = []
     frame_timestamp = []
@@ -72,7 +72,7 @@ def get_features(features_path):
 
     features = {'feature_list': feature_list}
     info = {'source_video': source_video, 'shot_begin_frame': shot_begin_frame, 'frame_timestamp': frame_timestamp, 'frame_path': frame_path}
-    print('done')
+    logger.info('done')
     return features, info
 
 
@@ -129,13 +129,17 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         # calculate the distance for all features
         logger.info('calculating the distance for all features')
         # distances = pairwise_distances(features_server['feature_list'], target_feature, metric=sqeuclidean, n_jobs=args.num_cores)
-        print(np.shape(features_server['feature_list']))
+        logger.debug(np.shape(features_server['feature_list']))
         f_size = np.shape(features_server['feature_list'])[0]
-        compute_batch_ = functools.partial(compute_batch, X=features_server['feature_list'], Y=target_feature, batch_size=int(f_size / args.num_cores))
+        nproc = args.num_cores if args.num_cores > 0 else mp.cpu_count()
+        batch_size = int(float(f_size)/nproc)
+        batches = [features_server['feature_list'][i:i+batch_size] for i in range(0, f_size, batch_size)]
+        compute_batch_ = functools.partial(compute_batch,  Y=target_feature)
+        logger.debug([len(batch) for batch in batches])
 
-        print("computing")
-        with mp.Pool(mp.cpu_count()) as pool:
-            distances = list(pool.imap(compute_batch_, [idx for idx in range(0, f_size, int(f_size / args.num_cores))]))
+        logger.info("computing")
+        with mp.Pool(nproc) as pool:
+            distances = list(pool.imap(compute_batch_, [batch for batch in batches]))
         distances = np.concatenate(distances)
         logger.info('calculated all distances')
 
