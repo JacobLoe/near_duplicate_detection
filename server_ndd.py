@@ -38,10 +38,6 @@ args = parser.parse_args()
 inception_model = load_model()
 
 
-def compute_batch(batch, Y):
-    dists = euclidean_distances(batch, Y)
-    return dists
-
 def get_features(features_path):
 
     logger.info('get features')
@@ -90,6 +86,14 @@ else:
     logger.info('done')
 
 
+def compute_batch(start_idx, batch_size, Y):
+
+    global features_server
+
+    dists = euclidean_distances(features_server['feature_list'][start_idx:start_idx+batch_size], Y)
+    return dists
+
+
 class RESTHandler(http.server.BaseHTTPRequestHandler):
 
     def do_HEAD(s):
@@ -130,17 +134,19 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         logger.info('calculating the distance for all features')
         # distances = pairwise_distances(features_server['feature_list'], target_feature, metric=sqeuclidean, n_jobs=args.num_cores)
         logger.debug(np.shape(features_server['feature_list']))
-        f_size = np.shape(features_server['feature_list'])[0]
-        nproc = args.num_cores if args.num_cores > 0 else mp.cpu_count()
-        batch_size = int(float(f_size)/nproc)
-        batches = [features_server['feature_list'][i:i+batch_size] for i in range(0, f_size, batch_size)]
-        compute_batch_ = functools.partial(compute_batch,  Y=target_feature)
-        logger.debug([len(batch) for batch in batches])
 
-        logger.info("computing")
+        f_size = np.shape(features_server['feature_list'])[0]   # the amount of features
+        nproc = args.num_cores if args.num_cores > 0 else mp.cpu_count()    # number of cpu jobs
+        batch_size = int(float(f_size)/nproc)
+
+        compute_batch_ = functools.partial(compute_batch, batch_size=batch_size, Y=target_feature)
+
+        # logger.info("computing")
         with mp.Pool(nproc) as pool:
-            distances = list(pool.imap(compute_batch_, [batch for batch in batches]))
+            distances = list(pool.imap(compute_batch_, [i for i in range(0, f_size, batch_size)]))
+
         distances = np.concatenate(distances)
+
         logger.info('calculated all distances')
 
         # sort by distance, ascending
