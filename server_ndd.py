@@ -85,12 +85,13 @@ else:
         pickle.dump([features_server, info_server], handle)
     logger.info('done')
 
+archive_features = np.asarray(features_server['feature_list'])
 
 def compute_batch(start_idx, batch_size, Y):
 
-    global features_server
+    global archive_features
 
-    dists = euclidean_distances(features_server['feature_list'][start_idx:start_idx+batch_size], Y)
+    dists = euclidean_distances(archive_features[start_idx:start_idx+batch_size, :], Y)
     return dists
 
 
@@ -133,10 +134,11 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         # calculate the distance for all features
         logger.info('calculating the distance for all features')
         # distances = pairwise_distances(features_server['feature_list'], target_feature, metric=sqeuclidean, n_jobs=args.num_cores)
-        logger.debug(np.shape(features_server['feature_list']))
+        logger.debug(archive_features.shape)
 
-        f_size = np.shape(features_server['feature_list'])[0]   # the amount of features
+        f_size = archive_features.shape[0]   # the amount of features
         nproc = args.num_cores if args.num_cores > 0 else mp.cpu_count()    # number of cpu jobs
+        logger.info("Using {nproc} cpus".format(nproc=nproc))
         batch_size = int(float(f_size)/nproc)
 
         compute_batch_ = functools.partial(compute_batch, batch_size=batch_size, Y=target_feature)
@@ -146,12 +148,13 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             distances = list(pool.imap(compute_batch_, [i for i in range(0, f_size, batch_size)]))
 
         distances = np.concatenate(distances)
-
+        distances = np.reshape(distances, distances.shape[0])
         logger.info('calculated all distances')
 
         # sort by distance, ascending
-        logger.info('sorting distances')
-        lowest_distances = sorted(zip(distances, info_server['source_video'], info_server['shot_begin_frame'], info_server['frame_timestamp'], info_server['frame_path']), key=lambda d: d[0])
+        logger.info("sorting distances")
+        indices = np.argsort(distances).tolist()
+        lowest_distances = [(distances[i], info_server['source_video'][i], info_server['shot_begin_frame'][i], info_server['frame_timestamp'][i], info_server['frame_path'][i]) for i in indices]
         logger.info('distances are sorted')
 
         num_results = post_data['num_results']
