@@ -64,6 +64,8 @@ def test_cast_1():
         p.append(a)
         c.append(True)
 
+    print(lowest_distances_16[:values_compared])
+    print(lowest_distances_32[:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
@@ -99,6 +101,8 @@ def test_cast_2():
         p.append(a)
         c.append(True)
 
+    print(lowest_distances_16[:values_compared])
+    print(lowest_distances_32[:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
@@ -134,6 +138,8 @@ def test_cast_3():
         p.append(a)
         c.append(True)
 
+    print(lowest_distances_16[:values_compared])
+    print(lowest_distances_32[:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
@@ -169,6 +175,8 @@ def test_cast_4():
         p.append(a)
         c.append(True)
 
+    print(lowest_distances_16[:values_compared])
+    print(lowest_distances_32[:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
@@ -204,6 +212,8 @@ def test_cast_5():
         p.append(a)
         c.append(True)
 
+    print(lowest_distances_16[:values_compared])
+    print(lowest_distances_32[:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
@@ -239,6 +249,8 @@ def test_cast_6():
         p.append(a)
         c.append(True)
 
+    print(lowest_distances_16[:values_compared])
+    print(lowest_distances_32[:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
@@ -274,6 +286,8 @@ def test_cast_7():
         p.append(a)
         c.append(True)
 
+    print(lowest_distances_16[:values_compared])
+    print(lowest_distances_32[:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
@@ -309,6 +323,8 @@ def test_cast_8():
         p.append(a)
         c.append(True)
 
+    print(lowest_distances_16[:values_compared])
+    print(lowest_distances_32[:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
@@ -344,6 +360,8 @@ def test_cast_9():
         p.append(a)
         c.append(True)
 
+    print(lowest_distances_16[:values_compared])
+    print(lowest_distances_32[:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
@@ -379,6 +397,8 @@ def test_cast_10():
         p.append(a)
         c.append(True)
 
+    print(lowest_distances_16[:values_compared])
+    print(lowest_distances_32[:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
@@ -414,6 +434,8 @@ def test_cast_11():
         p.append(a)
         c.append(True)
 
+    print(lowest_distances_16[:values_compared])
+    print(lowest_distances_32[:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
