@@ -75,7 +75,7 @@ def main(videos_path, features_path):
                 done += 1  # count the instances of the image-extraction done correctly
                 print('image-extraction was already done for {}'.format(os.path.split(v_path)[1]))
             elif os.path.isdir(os.path.join(frames_dir)) and not os.path.isfile(os.path.join(frames_dir, '.done')):
-                shutil.rmtree(f_path)
+                shutil.rmtree(frames_dir)
                 print('image-extraction was not done correctly for {}'.format(os.path.split(v_path)[1]))
 
 #########################################################################################################
