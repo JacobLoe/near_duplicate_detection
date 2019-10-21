@@ -47,7 +47,6 @@ def main(features_path):
                                 os.path.join(features_path, os.path.relpath(p, cp))
                             )[0])[0])[0]
                           for p in list_images_path]
-    # print(list_features_path)
     model = load_model()
     done = 0
     while done < len(list_features_path):  # repeat until all frames in the list have been processed correctly
@@ -55,7 +54,6 @@ def main(features_path):
             done = 0
         print('-------------------------------------------------------')
         for i_path, f_path in tqdm(zip(list_images_path, list_features_path), total=len(list_images_path)):
-        # for i_path, f_path in zip(list_images_path, list_features_path):
             feature_name = os.path.split(i_path)[1][:-4]  # get the name of the image, remove the file extension
 
             shot = os.path.split(os.path.split(i_path)[0])[1]  # get the name of the shot for the image
@@ -64,14 +62,6 @@ def main(features_path):
             path = path + '.npy'
             done_name = '.done' + feature_name
             done_path = os.path.join(fp, done_name)
-
-            # print((not os.path.isfile(path) and not os.path.isfile(done_path)),
-            #       (os.path.isfile(path) and os.path.isfile(done_path)),
-            #       (os.path.isfile(path) and not os.path.isfile(done_path)),
-            #       (not os.path.isfile(path) and os.path.isfile(done_path)))
-            # print(path)
-            # print(done_path)
-            # print('--------')
 
             if not os.path.isfile(path) and not os.path.isfile(done_path):  # if neither the feature nor a .done-file exist, start extracting the feature
                 if not os.path.isdir(fp):  # create the directory to save the features

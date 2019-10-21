@@ -1,7 +1,6 @@
 /static
 /0_static
 /test
-/test_images
 /__pycache__
 /results.html
 /results_filtered.html
@@ -13,3 +12,4 @@
 /features_pickle
 /extract_features_old.py
 /feature_distance.py
+/sorting.py

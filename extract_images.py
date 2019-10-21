@@ -71,11 +71,12 @@ def main(videos_path, features_path):
                 # create a hidden file to signal that the image-extraction for a movie is done
                 open(os.path.join(frames_dir, '.done'), 'a').close()
                 done += 1  # count the instances of the image-extraction done correctly
-            elif os.path.isfile(os.path.join(frames_dir, '.done')):
+            elif os.path.isfile(os.path.join(frames_dir, '.done')):     # do nothing if a .done-file exists
                 done += 1  # count the instances of the image-extraction done correctly
                 print('image-extraction was already done for {}'.format(os.path.split(v_path)[1]))
+            # if the folder already exists but the .done-file doesn't, delete the folder
             elif os.path.isdir(os.path.join(frames_dir)) and not os.path.isfile(os.path.join(frames_dir, '.done')):
-                shutil.rmtree(f_path)
+                shutil.rmtree(frames_dir)
                 print('image-extraction was not done correctly for {}'.format(os.path.split(v_path)[1]))
 
 #########################################################################################################

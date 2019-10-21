@@ -4,8 +4,6 @@ import urllib.parse
 import datetime
 import logging
 
-from scipy.spatial.distance import sqeuclidean
-from sklearn.metrics import pairwise_distances
 from extract_features import extract_features, load_model
 
 from sklearn.metrics.pairwise import euclidean_distances
@@ -32,7 +30,7 @@ logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--num_cores", type=int, default=48, help="specify the number cpu cores used for distance calculation, default value is 48")
+parser.add_argument("--num_cores", type=int, default=4, help="specify the number cpu cores used for distance calculation, default value is 4")
 args = parser.parse_args()
 
 inception_model = load_model()
@@ -87,6 +85,7 @@ else:
 
 archive_features = np.asarray(features_server['feature_list'])
 
+
 def compute_batch(start_idx, batch_size, Y):
 
     global archive_features
@@ -133,7 +132,6 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
         # calculate the distance for all features
         logger.info('calculating the distance for all features')
-        # distances = pairwise_distances(features_server['feature_list'], target_feature, metric=sqeuclidean, n_jobs=args.num_cores)
         logger.debug(archive_features.shape)
 
         f_size = archive_features.shape[0]   # the amount of features
@@ -143,7 +141,6 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
         compute_batch_ = functools.partial(compute_batch, batch_size=batch_size, Y=target_feature)
 
-        # logger.info("computing")
         with mp.Pool(nproc) as pool:
             distances = list(pool.imap(compute_batch_, [i for i in range(0, f_size, batch_size)]))
 
@@ -162,7 +159,6 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         hits = 0    # hits is incremented whenever a distance is added to filtered_distances, if hits is higher than num_results
         shot_hits = set()  # saves the name of the shots that have been added to filtered_distances
         index = 0
-        aa = []
 
         logger.info('filter distances')
         while (hits < num_results) and (index < (len(lowest_distances)-1)):  # repeat filtering until num_results results are found or there are no distances in the list anymore
@@ -188,7 +184,6 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             for dis, sv, sbf, ft, fp in filtered_distances]
         )
 
-        # logger.debug(concepts)
         s.send_response(200)
         s.send_header("Content-type", "application/json")
         s.end_headers()
@@ -214,4 +209,3 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('setting up server failed failed')
         pass
-    # httpd.server_close()
