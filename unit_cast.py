@@ -17,7 +17,7 @@ archive_features_32 = np.asarray(features_server['feature_list'])
 f_size = archive_features_16.shape[0]  # the amount of features
 nproc = 4
 batch_size = int(float(f_size) / nproc)
-values_compared = 40
+values_compared = 45
 
 
 def compute_batch_16(start_idx, batch_size, Y):
@@ -175,8 +175,8 @@ def test_cast_4():
         p.append(a)
         c.append(True)
 
-    print(lowest_distances_16[:values_compared])
-    print(lowest_distances_32[:values_compared])
+    print(lowest_distances_16[42:values_compared])
+    print(lowest_distances_32[42:values_compared])
     assert p[:values_compared] == c[:values_compared]
 
 
@@ -440,4 +440,4 @@ def test_cast_11():
 
 
 if __name__ == "__main__":
-    test_cast_1()
+    test_cast_4()

@@ -31,6 +31,7 @@ logger.propagate = False    # prevent log messages from appearing twice
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--num_cores", type=int, default=4, help="specify the number cpu cores used for distance calculation, default value is 4")
+parser.add_argument("--features_dtype", default='float16', help="set the dtype of the features, default is float16")
 args = parser.parse_args()
 
 inception_model = load_model()
@@ -83,7 +84,7 @@ else:
         pickle.dump([features_server, info_server], handle)
     logger.info('done')
 
-archive_features = np.asarray(features_server['feature_list'])
+archive_features = np.asarray(features_server['feature_list'], dtype=args.features_dtype)
 
 
 def compute_batch(start_idx, batch_size, Y):
