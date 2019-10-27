@@ -22,8 +22,10 @@ def read_shotdetect_xml(path):
 # read video file frame by frame, beginning and ending with a timestamp
 
 
-def save_shot_frames(video_path, frame_path, start_ms, end_ms):
-    frame_size = (299, 299)
+def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_size):
+    # frame_size = (299, 299)
+    # frame_size = (1280, 720)
+    # frame_size = (720, 480)
     vid = cv2.VideoCapture(video_path)
 
     for i in range(int(end_ms/1000-start_ms/1000)+1):
@@ -36,7 +38,7 @@ def save_shot_frames(video_path, frame_path, start_ms, end_ms):
 #########################################################################################################
 
 
-def main(videos_path, features_path):
+def main(videos_path, features_path, frame_size):
     print('begin iterating through videos')
 
     list_videos_path = glob.glob(os.path.join(videos_path, '**/*.mp4'), recursive=True)  # get the list of videos in videos_dir
@@ -66,7 +68,8 @@ def main(videos_path, features_path):
                         os.makedirs(frames_path)
                     save_shot_frames(v_path,
                                      frames_path,
-                                     start_frame, end_frame)
+                                     start_frame, end_frame,
+                                     frame_size)
 
                 # create a hidden file to signal that the image-extraction for a movie is done
                 open(os.path.join(frames_dir, '.done'), 'a').close()
@@ -78,7 +81,6 @@ def main(videos_path, features_path):
             elif os.path.isdir(os.path.join(frames_dir)) and not os.path.isfile(os.path.join(frames_dir, '.done')):
                 shutil.rmtree(frames_dir)
                 print('image-extraction was not done correctly for {}'.format(os.path.split(v_path)[1]))
-
 #########################################################################################################
 
 
@@ -87,6 +89,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("videos_dir", help="the directory where the video-files are stored")
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
+    parser.add_argument("--frame_size", type=tuple, default=(720, 480), help=",default is (720, 480)")
     args = parser.parse_args()
 
-    main(args.videos_dir, args.features_dir)
+    main(args.videos_dir, args.features_dir, args.frame_size)

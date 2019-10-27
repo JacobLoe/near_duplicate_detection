@@ -22,16 +22,16 @@ def write_html_str(results, target_image):
     # write to html
     html_str = '<!DOCTYPE html><html lang="en"><table cellspacing="20"><tr><th>thumbnail</th><th>videofile</th><th>frame timestamp</th><th>shot_beginning</th><th>distance</th></tr>'
     # add the target image to the html
-    html_str += str('<tr><td><img src="{}"></td></tr>'.format(target_image))
+    html_str += str('<tr><td><img src="{}" width="480"></td></tr>'.format(target_image))
 
     # append the found images to the html
     for row in results:
         # write an entry for the table, format is: frame_path, source_video, frame_timestamp, shot_begin_frame, distance
-        html_str += str('<tr><td><img src="{}"></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(row['frame_path'],
-                                                                                                              row['source_video'],
-                                                                                                              row['frame_timestamp'],
-                                                                                                              row['shot_begin_frame'],
-                                                                                                              row['distance']))
+        html_str += str('<tr><td><img src="{}" width="480"></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(row['frame_path'],
+                                                                                                                          row['source_video'],
+                                                                                                                          row['frame_timestamp'],
+                                                                                                                          row['shot_begin_frame'],
+                                                                                                                          row['distance']))
 
     html_str += '</table></html>'
     return html_str
@@ -112,13 +112,13 @@ def upload_file():
             if os.path.isfile(target_image_path):
                 os.remove(target_image_path)
 
-            # save the image, open it with pillow, resize, save it again
-            # this way the image displayed is the at a reasonable size
-            file.save(target_image_path)
-            target_image = Image.open(target_image_path)
-            target_image = target_image.convert('RGB')
-            target_image = target_image.resize((299, 299))
-            target_image.save(target_image_path)
+            # # save the image, open it with pillow, resize, save it again
+            # # this way the image displayed is the at a reasonable size
+            # file.save(target_image_path)
+            # target_image = Image.open(target_image_path)
+            # target_image = target_image.convert('RGB')
+            # target_image = target_image.resize((299, 299))
+            # target_image.save(target_image_path)
 
             target_image = Image.open(target_image_path)
             target_image = target_image.convert('RGB')
@@ -127,7 +127,6 @@ def upload_file():
             target_image = buf.getvalue()
             target_image = base64.encodebytes(target_image).decode('ascii')
 
-            # url = 'http://localhost:9000/' # the name assigned in the docker subnet
             url = 'http://server_ndd:9000/'  # the name assigned in the docker subnet
 
             server_options = {}

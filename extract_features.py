@@ -1,11 +1,11 @@
 import os
-import shutil
 import argparse
 import numpy as np
 from tqdm import tqdm
 import glob
 import cv2
-
+from PIL import Image
+from crop_image import trim
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.applications.inception_resnet_v2 import preprocess_input
 from keras.models import Model
@@ -53,6 +53,7 @@ def main(features_path):
         if done != 0:
             done = 0
         print('-------------------------------------------------------')
+        aux_frame_size = (0, 0)
         for i_path, f_path in tqdm(zip(list_images_path, list_features_path), total=len(list_images_path)):
             feature_name = os.path.split(i_path)[1][:-4]  # get the name of the image, remove the file extension
 
@@ -67,7 +68,16 @@ def main(features_path):
                 if not os.path.isdir(fp):  # create the directory to save the features
                     os.makedirs(fp)
 
-                frame = cv2.imread(i_path)  # read the frame from disc
+                # frame = cv2.imread(i_path)  # read the frame from disc
+                frame = Image.open(i_path)
+                frame = frame.convert('RGB')
+                if args.crop_letterbox:
+                    frame = trim(frame)
+                if np.shape(frame) != aux_frame_size:
+                    pass
+
+                frame = frame.resize((299, 299))  # resize the image to the size used by inception
+
                 feature = extract_features(model, frame)  # run the model on the frame
                 np.save(path, feature)  # save the feature to disc
                 # create a hidden file to signal that the feature-extraction for a frame is done
@@ -89,6 +99,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("features_dir", help="the directory where the feature-vectors are to be stored, for example 'features'")
+    parser.add_argument("--crop_letterbox", type=bool, default=False, help="remove the letterbox of an image, takes a bool, default is False")
     args = parser.parse_args()
 
     main(args.features_dir)
