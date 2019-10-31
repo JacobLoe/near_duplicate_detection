@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 import glob
 import shutil
 import time
+import numpy as np
 #################################################################
 
 
@@ -22,23 +23,33 @@ def read_shotdetect_xml(path):
 # read video file frame by frame, beginning and ending with a timestamp
 
 
-def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_size):
-    # frame_size = (299, 299)
-    # frame_size = (1280, 720)
-    # frame_size = (720, 480)
+def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file_extension):
+    print(frame_width)
+    print(file_extension)
     vid = cv2.VideoCapture(video_path)
+    file_extension = file_extension.lower()
+    if file_extension[0] != '.':
+        file_extension = '.'+file_extension
+    if file_extension == '.png' or file_extension == '.jpg':
+        for i in range(int(end_ms/1000-start_ms/1000)+1):
+            if not (start_ms/1000+i) == (int(end_ms/1000-start_ms/1000)+1):
+                vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*1000)
+                ret, frame = vid.read()
+                if i == 0 and frame_width != 0:
+                    frame_height = int(frame_width/(np.shape(frame)[1]/np.shape(frame)[0]))
+                    frame_size = (frame_width, frame_height)
+                if frame_width != 0:
+                    frame = cv2.resize(frame, frame_size)
+                print(np.shape(frame))
+                name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
+                cv2.imwrite(name, frame)
+    else:
+        raise NameError('{} is not a supported file_extension'.format(file_extension))
 
-    for i in range(int(end_ms/1000-start_ms/1000)+1):
-        if not (start_ms/1000+i) == (int(end_ms/1000-start_ms/1000)+1):
-            vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*1000)
-            ret, frame = vid.read()
-            frame = cv2.resize(frame, frame_size)
-            name = os.path.join(frame_path, (str(start_ms+i*1000)+'.png'))
-            cv2.imwrite(name, frame)
 #########################################################################################################
 
 
-def main(videos_path, features_path, frame_size):
+def main(videos_path, features_path, frame_width, file_extension):
     print('begin iterating through videos')
 
     list_videos_path = glob.glob(os.path.join(videos_path, '**/*.mp4'), recursive=True)  # get the list of videos in videos_dir
@@ -69,8 +80,8 @@ def main(videos_path, features_path, frame_size):
                     save_shot_frames(v_path,
                                      frames_path,
                                      start_frame, end_frame,
-                                     frame_size)
-
+                                     frame_width,
+                                     file_extension)
                 # create a hidden file to signal that the image-extraction for a movie is done
                 open(os.path.join(frames_dir, '.done'), 'a').close()
                 done += 1  # count the instances of the image-extraction done correctly
@@ -89,7 +100,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("videos_dir", help="the directory where the video-files are stored")
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
-    parser.add_argument("--frame_size", type=tuple, default=(720, 480), help=",default is (720, 480)")
+    parser.add_argument("--frame_width", type=int, default=720, help="specify the width of the frames, if the width is 0 the resolution will be unchanged, default is 720")
+    parser.add_argument("--file_extension", default='jpg', help="define the file_extension of the frames, only .png and .jpg are supported, default is .jpg")
     args = parser.parse_args()
 
-    main(args.videos_dir, args.features_dir, args.frame_size)
+    main(args.videos_dir, args.features_dir, args.frame_width, args.file_extension)
