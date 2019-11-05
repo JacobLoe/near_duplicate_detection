@@ -5,7 +5,6 @@ from tqdm import tqdm
 import xml.etree.ElementTree as ET
 import glob
 import shutil
-import time
 import numpy as np
 #################################################################
 
@@ -24,8 +23,6 @@ def read_shotdetect_xml(path):
 
 
 def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file_extension):
-    print(frame_width)
-    print(file_extension)
     vid = cv2.VideoCapture(video_path)
     file_extension = file_extension.lower()
     if file_extension[0] != '.':
@@ -40,7 +37,6 @@ def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file
                     frame_size = (frame_width, frame_height)
                 if frame_width != 0:
                     frame = cv2.resize(frame, frame_size)
-                print(np.shape(frame))
                 name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
                 cv2.imwrite(name, frame)
     else:
@@ -101,7 +97,7 @@ if __name__ == "__main__":
     parser.add_argument("videos_dir", help="the directory where the video-files are stored")
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
     parser.add_argument("--frame_width", type=int, default=720, help="specify the width of the frames, if the width is 0 the resolution will be unchanged, default is 720")
-    parser.add_argument("--file_extension", default='jpg', help="define the file_extension of the frames, only .png and .jpg are supported, default is .jpg")
+    parser.add_argument("--file_extension", default='jpg', help="define the file-extension of the frames, only .png and .jpg are supported, default is .jpg")
     args = parser.parse_args()
 
     main(args.videos_dir, args.features_dir, args.frame_width, args.file_extension)
