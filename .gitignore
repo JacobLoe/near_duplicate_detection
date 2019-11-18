@@ -12,7 +12,10 @@
 /features_pickle
 /extract_features_old.py
 /feature_distance.py
-/sorting.py
 /static_720p
 /static_480p
 /static (copy)
+/static_480
+/static_719
+/test_crop.py
+/static_resized

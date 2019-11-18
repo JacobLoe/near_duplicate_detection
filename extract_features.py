@@ -53,7 +53,9 @@ def main(features_path):
         if done != 0:
             done = 0
         print('-------------------------------------------------------')
-        aux_frame_size = (0, 0)
+        curr_movie = ''
+        curr_movie_frame_size = (0, 0)
+        j = 0
         for i_path, f_path in tqdm(zip(list_images_path, list_features_path), total=len(list_images_path)):
             feature_name = os.path.split(i_path)[1][:-4]  # get the name of the image, remove the file extension
 
@@ -68,30 +70,39 @@ def main(features_path):
                 if not os.path.isdir(fp):  # create the directory to save the features
                     os.makedirs(fp)
 
-                # frame = cv2.imread(i_path)  # read the frame from disc
                 frame = Image.open(i_path)
                 frame = frame.convert('RGB')
                 if args.crop_letterbox:
                     frame = trim(frame)
-                if np.shape(frame) != aux_frame_size:
-                    pass
+                    video_name = os.path.split(f_path)[1]
+                    print(video_name)
+                    if j == 0:
+                        curr_movie = video_name
+                        curr_movie_frame_size = np.shape(frame)
+                    if curr_movie != video_name:
+                        curr_movie = video_name
 
-                frame = frame.resize((299, 299))  # resize the image to the size used by inception
-
-                feature = extract_features(model, frame)  # run the model on the frame
-                np.save(path, feature)  # save the feature to disc
-                # create a hidden file to signal that the feature-extraction for a frame is done
-                open(done_path, 'a').close()
-                done += 1  # count the instances of the feature-extraction done correctly
-            elif os.path.isfile(path) and os.path.isfile(done_path):    # if both files exist, do nothing
-                done += 1  # count the instances of the feature-extraction done correctly
-            # if either the feature or the .done-file don't exist, something went wrong
-            # the other file is deleted, so the process can be finished in the second iteration
-            elif os.path.isfile(path) and not os.path.isfile(done_path):
-                os.remove(path)
-            elif not os.path.isfile(path) and os.path.isfile(done_path):
-                os.remove(done_path)
-        print('feature-extraction was already done for {}/{} features'.format(done, len(list_features_path)))
+                    if curr_movie == video_name and np.shape(frame) != curr_movie_frame_size:
+                        pass
+            break
+        break
+        #
+        #         frame = frame.resize((299, 299))  # resize the image to the size used by inception
+        #
+        #         feature = extract_features(model, frame)  # run the model on the frame
+        #         np.save(path, feature)  # save the feature to disc
+        #         # create a hidden file to signal that the feature-extraction for a frame is done
+        #         open(done_path, 'a').close()
+        #         done += 1  # count the instances of the feature-extraction done correctly
+        #     elif os.path.isfile(path) and os.path.isfile(done_path):    # if both files exist, do nothing
+        #         done += 1  # count the instances of the feature-extraction done correctly
+        #     # if either the feature or the .done-file don't exist, something went wrong
+        #     # the other file is deleted, so the process can be finished in the second iteration
+        #     elif os.path.isfile(path) and not os.path.isfile(done_path):
+        #         os.remove(path)
+        #     elif not os.path.isfile(path) and os.path.isfile(done_path):
+        #         os.remove(done_path)
+        # print('feature-extraction was already done for {}/{} features'.format(done, len(list_features_path)))
 #########################################################################################################
 
 

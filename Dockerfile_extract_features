@@ -12,6 +12,7 @@ COPY requirements_extract_features.txt /root
 RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_extract_features.txt
 
 COPY extract_features.py /root
+COPY crop_images.py /root
 
 VOLUME "/data"
 
