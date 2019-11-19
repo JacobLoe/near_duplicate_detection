@@ -88,7 +88,7 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
                         os.makedirs(frames_path)
                     # compare the resolution, after trimming of the shot, with the maximum resolution in the movie
                     # and choose the larger resolution
-                    if max_res_pro_shot[video_name][start_frame][1] < resolution_template[video_name][1]:
+                    if max_res_pro_shot[video_name][start_frame][0] < resolution_template[video_name][0]:
                         frame_resolution = resolution_template[video_name]
                     else:
                         frame_resolution = max_res_pro_shot[video_name][start_frame]
