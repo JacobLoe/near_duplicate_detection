@@ -5,6 +5,7 @@ import datetime
 import logging
 
 from extract_features import extract_features, load_model
+from crop_image import trim
 
 from sklearn.metrics.pairwise import euclidean_distances
 import multiprocessing as mp
@@ -122,6 +123,9 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         image_scale = 299
         target_image = post_data['target_image']
         target_image = Image.open(BytesIO(base64.b64decode(target_image)))
+        if post_data['remove_letterbox'] == 'True':
+            logger.info('removed letterbox in target image')
+            target_image = trim(target_image)
         target_image = target_image.resize((image_scale, image_scale))
         target_image.save('target_image.png')
         target_image = np.array(target_image)

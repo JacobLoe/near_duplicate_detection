@@ -92,7 +92,8 @@ def upload_file():
             return redirect(request.url)
         file = request.files['file']
 
-        num_results = request.form.get('textbox')
+        remove_letterbox = request.form.get('remove_letterbox')
+        num_results = request.form.get('num_results')
         # if user does not select file, browser also
         # submits an empty part without filename
         if file.filename == '':
@@ -112,14 +113,7 @@ def upload_file():
             if os.path.isfile(target_image_path):
                 os.remove(target_image_path)
 
-            # # save the image, open it with pillow, resize, save it again
-            # # this way the image displayed is the at a reasonable size
-            # file.save(target_image_path)
-            # target_image = Image.open(target_image_path)
-            # target_image = target_image.convert('RGB')
-            # target_image = target_image.resize((299, 299))
-            # target_image.save(target_image_path)
-
+            file.save(target_image_path)
             target_image = Image.open(target_image_path)
             target_image = target_image.convert('RGB')
             buf = BytesIO()
@@ -150,6 +144,7 @@ def upload_file():
             response = session.post(url, headers=headers, json={
                 'target_image': target_image,
                 'num_results': num_results,
+                'remove_letterbox': remove_letterbox
             })
 
             output = response.json()
@@ -165,8 +160,9 @@ def upload_file():
     <h1>Upload new File</h1>
     <form method=post enctype=multipart/form-data>
       <input type=file name=file>
-      <textarea name="textbox"></textarea> 
+      <textarea name="num_results"></textarea> 
       <input type=submit value=Upload>
+      <input type="checkbox" name="remove_letterbox" value="True">
     </form>
     '''
 
