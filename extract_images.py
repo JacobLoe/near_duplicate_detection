@@ -34,14 +34,12 @@ def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file
             if not (start_ms/1000+i) == (int(end_ms/1000-start_ms/1000)+1):
                 vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*1000)
                 ret, frame = vid.read()
-
                 # resize the frame to according to the frame_width provided and the aspect ratio of the frame
                 resolution_old = np.shape(Image.fromarray(frame))
                 ratio = resolution_old[1]/resolution_old[0]
                 frame_height = int(frame_width/ratio)
                 resolution_new = (frame_width, frame_height)
                 frame = cv2.resize(frame, resolution_new)
-
                 name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
                 cv2.imwrite(name, frame)
     else:
@@ -57,8 +55,7 @@ def rescale_saved_frames(frame_path, start_ms, end_ms, frame_resolution, file_ex
             if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
                 name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
                 frame = cv2.imread(name)
-                print(frame_resolution)
-                frame = cv2.resize(frame, frame_resolution[:2])
+                frame = cv2.resize(frame, frame_resolution)
                 cv2.imwrite(name, frame)
     else:
         raise NameError('{} is not a supported file_extension'.format(file_extension))
@@ -82,9 +79,7 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
                 frame_height = int(frame_width/ratio)
                 resolution_new = (frame_width, frame_height)
                 frame = cv2.resize(frame, resolution_new)
-
                 frame_array = Image.fromarray(frame)
-
                 # save the frame for later use
                 name = os.path.join(frame_path, (str(start_ms + i * 1000) + file_extension))
                 cv2.imwrite(name, frame)
@@ -95,7 +90,7 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
     else:
         raise NameError('{} is not a supported file_extension'.format(file_extension))
 
-    max_shot_resolution = sorted(shot_resolutions, reverse=True)    # FIXME list is sorted on height, then width, descending
+    max_shot_resolution = sorted(shot_resolutions, reverse=True)
     if max_shot_resolution[0] == ():
         max_shot_resolution = [(0, 0, 3)]
     return max_shot_resolution[0][:2][::-1]     # reverse the order of the resolution to make it work with opencv
@@ -115,6 +110,8 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
             aux_res_dict = {}   # save the max resolution of each shot of a movie in a dict, keys are the start_frame of the shot
             for start_frame, end_frame in tqdm(shot_timestamps):
                 frames_path = os.path.join(f_path, 'frames', str(start_frame))
+                if not os.path.isdir(frames_path):
+                    os.makedirs(frames_path)
                 aux_res_dict[start_frame] = get_trimmed_shot_resolution(v_path,
                                                                         frames_path,
                                                                         start_frame, end_frame,
@@ -122,6 +119,8 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
                                                                         file_extension)
             max_res_pro_shot[video_name] = aux_res_dict
             resolution_template[video_name] = sorted(aux_res_dict.values(), reverse=True)[0]
+            # create a hidden file to signal that the image-extraction for a movie is done
+            open(os.path.join(frames_dir, '.done'), 'a').close()
         elif os.path.isfile(os.path.join(frames_dir, '.done')):     # do nothing if a .done-file exists
             pass  # count the instances of the image-extraction done correctly
         # if the folder already exists but the .done-file doesn't, delete the folder
@@ -134,8 +133,6 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
             for start_frame, end_frame in tqdm(shot_timestamps):
                 # create a dir for a specific shot, the name are the boundaries in ms
                 frames_path = os.path.join(f_path, 'frames', str(start_frame))
-                if not os.path.isdir(frames_path):
-                    os.makedirs(frames_path)
                 # compare the resolution, after trimming of the shot, with the maximum resolution in the movie
                 # and choose the larger resolution
                 if max_res_pro_shot[video_name][start_frame][0] < resolution_template[video_name][0]:
@@ -147,8 +144,6 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
                                      start_frame, end_frame,
                                      frame_resolution,
                                      file_extension)
-            # create a hidden file to signal that the image-extraction for a movie is done
-            open(os.path.join(frames_dir, '.done'), 'a').close()
             done += 1  # count the instances of the image-extraction done correctly
         elif os.path.isfile(os.path.join(frames_dir, '.done')):     # do nothing if a .done-file exists
             done += 1  # count the instances of the image-extraction done correctly
