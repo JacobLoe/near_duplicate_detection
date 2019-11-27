@@ -106,7 +106,7 @@ def main(features_path, file_extension):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("features_dir", help="the directory where the feature-vectors are to be stored, for example 'features'")
-    parser.add_argument("--file_extension", default='.jpg', choices=('.jpg', '.png'), help="define the file-extension of the frames, only .png and .jpg are supported, default is .jpg")
+    parser.add_argument("--file_extension", default='.jpg', choices=('.jpg', '.png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpg")
     args = parser.parse_args()
 
     main(args.features_dir, args.file_extension)
