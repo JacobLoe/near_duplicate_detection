@@ -38,10 +38,11 @@ def load_model():
 ####################################################
 
 
-def main(features_path):
+def main(features_path, file_extension):
     model_name = 'features_InceptionResNetV2_avgpoolLayer'
 
-    images = os.path.join(features_path, '**/frames/*/*.png')
+    glob_path = os.path.join('**/frames/*/*', file_extension)
+    images = os.path.join(features_path, glob_path)
     list_images_path = glob.glob(images, recursive=True)  # get the list of videos in videos_dir
     cp = os.path.commonprefix(list_images_path)  # get the common dir between paths found with glob
 
@@ -51,6 +52,7 @@ def main(features_path):
                 os.path.join(features_path, os.path.relpath(p, cp))
             )[0])[0])[0]
                           for p in list_images_path]
+
     model = load_model()
     done = 0
     while done < len(list_features_path):  # repeat until all frames in the list have been processed correctly
@@ -75,10 +77,10 @@ def main(features_path):
                 # frame = cv2.imread(i_path)  # read the frame from disc
                 frame = Image.open(i_path)
                 frame = frame.convert('RGB')
-                if args.crop_letterbox:
-                    frame = trim(frame)
-                if np.shape(frame) != aux_frame_size:
-                    pass
+                # if args.crop_letterbox:
+                #     frame = trim(frame)
+                # if np.shape(frame) != aux_frame_size:
+                #     pass
 
                 frame = frame.resize((299, 299))  # resize the image to the size used by inception
 
@@ -104,7 +106,7 @@ def main(features_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("features_dir", help="the directory where the feature-vectors are to be stored, for example 'features'")
-    parser.add_argument("--crop_letterbox", type=bool, default=False, help="remove the letterbox of an image, takes a bool, default is False")
+    parser.add_argument("--file_extension", default='.jpg', choices=('.jpg', '.png'), help="define the file-extension of the frames, only .png and .jpg are supported, default is .jpg")
     args = parser.parse_args()
 
-    main(args.features_dir)
+    main(args.features_dir, args.file_extension)

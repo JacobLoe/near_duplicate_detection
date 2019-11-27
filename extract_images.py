@@ -26,53 +26,40 @@ def read_shotdetect_xml(path):
 
 def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file_extension):
     vid = cv2.VideoCapture(video_path)
-    file_extension = file_extension.lower()
-    if file_extension[0] != '.':
-        file_extension = '.'+file_extension
-    if file_extension == '.png' or file_extension == '.jpg':
-        for i in range(int(end_ms/1000-start_ms/1000)+1):
-            if not (start_ms/1000+i) == (int(end_ms/1000-start_ms/1000)+1):
-                vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*1000)
-                ret, frame = vid.read()
+    for i in range(int(end_ms/1000-start_ms/1000)+1):
+        if not (start_ms/1000+i) == (int(end_ms/1000-start_ms/1000)+1):
+            vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*1000)
+            ret, frame = vid.read()
+            if frame_width:
+                print(frame_width)
                 # resize the frame to according to the frame_width provided and the aspect ratio of the frame
                 resolution_old = np.shape(Image.fromarray(frame))
                 ratio = resolution_old[1]/resolution_old[0]
                 frame_height = int(frame_width/ratio)
                 resolution_new = (frame_width, frame_height)
                 frame = cv2.resize(frame, resolution_new)
-                name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
-                cv2.imwrite(name, frame)
-    else:
-        raise NameError('{} is not a supported file_extension'.format(file_extension))
+            name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
+            cv2.imwrite(name, frame)
 
 
 def rescale_saved_frames(frame_path, start_ms, end_ms, frame_resolution, file_extension):
-    file_extension = file_extension.lower()
-    if file_extension[0] != '.':
-        file_extension = '.'+file_extension
-    if file_extension == '.png' or file_extension == '.jpg':
-        for i in range(int(end_ms / 1000 - start_ms / 1000) + 1):
-            if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
-                name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
-                frame = cv2.imread(name)
-                frame = cv2.resize(frame, frame_resolution)
-                cv2.imwrite(name, frame)
-    else:
-        raise NameError('{} is not a supported file_extension'.format(file_extension))
+    for i in range(int(end_ms / 1000 - start_ms / 1000) + 1):
+        if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
+            name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
+            frame = cv2.imread(name)
+            frame = cv2.resize(frame, frame_resolution)
+            cv2.imwrite(name, frame)
 
 
 def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_width, file_extension):
     vid = cv2.VideoCapture(video_path)
     shot_resolutions = []
-    file_extension = file_extension.lower()
-    if file_extension[0] != '.':
-        file_extension = '.'+file_extension
-    if file_extension == '.png' or file_extension == '.jpg':
-        for i in range(int(end_ms / 1000 - start_ms / 1000) + 1):
-            if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
-                vid.set(cv2.CAP_PROP_POS_MSEC, start_ms + i * 1000)
-                ret, frame = vid.read()
+    for i in range(int(end_ms / 1000 - start_ms / 1000) + 1):
+        if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
+            vid.set(cv2.CAP_PROP_POS_MSEC, start_ms + i * 1000)
+            ret, frame = vid.read()
 
+            if frame_width:
                 # resize the frame to according to the frame_width provided and the aspect ratio of the frame
                 resolution_old = np.shape(Image.fromarray(frame))
                 ratio = resolution_old[1]/resolution_old[0]
@@ -80,15 +67,13 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
                 resolution_new = (frame_width, frame_height)
                 frame = cv2.resize(frame, resolution_new)
                 frame_array = Image.fromarray(frame)
-                # save the frame for later use
-                name = os.path.join(frame_path, (str(start_ms + i * 1000) + file_extension))
-                cv2.imwrite(name, frame)
+            # save the frame for later use
+            name = os.path.join(frame_path, (str(start_ms + i * 1000) + file_extension))
+            cv2.imwrite(name, frame)
 
-                # use the trim function and save the resulting resolution
-                frame_array = trim(frame_array)
-                shot_resolutions.append(np.shape(frame_array))
-    else:
-        raise NameError('{} is not a supported file_extension'.format(file_extension))
+            # use the trim function and save the resulting resolution
+            frame_array = trim(frame_array)
+            shot_resolutions.append(np.shape(frame_array))
 
     max_shot_resolution = sorted(shot_resolutions, reverse=True)
     if max_shot_resolution[0] == ():
@@ -206,9 +191,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("videos_dir", help="the directory where the video-files are stored")
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
-    parser.add_argument("--trim_frames", default='yes', choices=('yes', 'no'), help="decide whether to remove or keep black borders in the movies")
+    parser.add_argument("--trim_frames", default='no', choices=('yes', 'no'), help="decide whether to remove or keep black borders in the movies")
     parser.add_argument("--frame_width", type=int, help="set the width at which the frames are saved")
-    parser.add_argument("--file_extension", default='jpg', help="define the file-extension of the frames, only .png and .jpg are supported, default is .jpg")
+    parser.add_argument("--file_extension", default='.jpg', choices=('.jpg', '.png'), help="define the file-extension of the frames, only .png and .jpg are supported, default is .jpg")
     args = parser.parse_args()
 
     main(args.videos_dir, args.features_dir, args.file_extension, args.trim_frames, args.frame_width)
