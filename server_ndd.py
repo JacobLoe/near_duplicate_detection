@@ -126,6 +126,12 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         if post_data['remove_letterbox'] == 'True':
             logger.info('removed letterbox in target image')
             target_image = trim(target_image)
+
+        buf = BytesIO()
+        target_image.save(buf, 'PNG')
+        trimmed_target_image = buf.getvalue()
+        trimmed_target_image = base64.encodebytes(trimmed_target_image).decode('ascii')
+
         target_image = target_image.resize((image_scale, image_scale))
         target_image.save('target_image.png')
         target_image = np.array(target_image)
@@ -195,7 +201,8 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         response = json.dumps({
             "status": 200,
             "message": "OK",
-            "data": concepts
+            "data": concepts,
+            "trimmed_target_image": trimmed_target_image
         })
         s.wfile.write(response.encode())
 

@@ -22,7 +22,7 @@ def write_html_str(results, target_image):
     # write to html
     html_str = '<!DOCTYPE html><html lang="en"><table cellspacing="20"><tr><th>thumbnail</th><th>videofile</th><th>frame timestamp</th><th>shot_beginning</th><th>distance</th></tr>'
     # add the target image to the html
-    html_str += str('<tr><td><img src="{}" width="480"></td></tr>'.format(target_image))
+    html_str += str('<tr><td><img src="data:image/PNG;base64,{}" width="480"></td></tr>'.format(target_image))
 
     # append the found images to the html
     for row in results:
@@ -152,7 +152,9 @@ def upload_file():
             # get the results from the server as a list of dicts
             results = output.get('data')
 
-            html_table = write_html_str(results, target_image_path)
+            trimmed_target_image = output.get('trimmed_target_image')
+
+            html_table = write_html_str(results, trimmed_target_image)
             return html_table
     return '''
     <!doctype html>
@@ -162,7 +164,7 @@ def upload_file():
       <input type=file name=file>
       <textarea name="num_results"></textarea> 
       <input type=submit value=Upload>
-      <input type="checkbox" name="remove_letterbox" value="True">
+      <label><input type="checkbox" name="remove_letterbox" value="True">remove letterbox</label>
     </form>
     '''
 
