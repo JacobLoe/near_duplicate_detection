@@ -4,3 +4,4 @@ numpy
 tqdm
 tensorflow
 keras
+pillow

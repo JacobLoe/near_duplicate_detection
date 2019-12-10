@@ -41,7 +41,7 @@ def load_model():
 def main(features_path, file_extension):
     model_name = 'features_InceptionResNetV2_avgpoolLayer'
 
-    glob_path = os.path.join('**/frames/*/*', file_extension)
+    glob_path = '**/frames/*/*' + file_extension
     images = os.path.join(features_path, glob_path)
     list_images_path = glob.glob(images, recursive=True)  # get the list of videos in videos_dir
     cp = os.path.commonprefix(list_images_path)  # get the common dir between paths found with glob
@@ -52,7 +52,6 @@ def main(features_path, file_extension):
                 os.path.join(features_path, os.path.relpath(p, cp))
             )[0])[0])[0]
                           for p in list_images_path]
-
     model = load_model()
     done = 0
     while done < len(list_features_path):  # repeat until all frames in the list have been processed correctly

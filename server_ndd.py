@@ -58,7 +58,7 @@ def get_features(features_path):
         i_sv = os.path.split(os.path.split(i_sbf[0])[0])  # the name of the videofile of the feature
 
         # recreate the path to the image from the path to the feature
-        i_fp = os.path.join(i_sv[0], i_sv[1], 'frames', i_sbf[1], i_ft[1][:-4]+'.png')  # the path to image corresponding to the feature
+        i_fp = os.path.join(i_sv[0], i_sv[1], 'frames', i_sbf[1], i_ft[1][:-4]+'.jpg')  # the path to image corresponding to the feature
 
         # add information for the frame
         source_video.append(i_sv[1])  # save the name of the source video
