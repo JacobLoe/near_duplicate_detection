@@ -8,6 +8,8 @@ import shutil
 import numpy as np
 from crop_image import trim
 from PIL import Image
+from scipy.spatial.distance import euclidean
+import csv
 #################################################################
 
 
@@ -66,19 +68,43 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
                 frame_height = int(frame_width/ratio)
                 resolution_new = (frame_width, frame_height)
                 frame = cv2.resize(frame, resolution_new)
-                frame_array = Image.fromarray(frame)
+
+            # use the trim function and save the resulting resolution
+            frame_array = Image.fromarray(frame)
+            frame_array = trim(frame_array)
+            shot_resolutions.append(np.shape(frame_array))
+
             # save the frame for later use
             name = os.path.join(frame_path, (str(start_ms + i * 1000) + file_extension))
             cv2.imwrite(name, frame)
-
-            # use the trim function and save the resulting resolution
-            frame_array = trim(frame_array)
-            shot_resolutions.append(np.shape(frame_array))
 
     max_shot_resolution = sorted(shot_resolutions, reverse=True)
     if max_shot_resolution[0] == ():
         max_shot_resolution = [(0, 0, 3)]
     return max_shot_resolution[0][:2][::-1]     # reverse the order of the resolution to make it work with opencv
+
+
+def save_aspect_ratio_in_csv(mrps, frames_dir, shot_timestamps):
+
+    # ar = [res[0]/(res[1]) if not res[1] == 0 else 0 for res in mrps.values()]
+    tu_ar_float = [21.01/9, 21/9, 16/9, 4/3, 1/1, 3/4, 9/16, 9/16.01]
+    tu_ar_str = ['>21/9', '21/9', '16/9', '4/3', '1/1', '3/4', '9/16', '<9/16']
+
+    ar_csv_path = os.path.join(frames_dir, 'aspect_ratio_per_shot.csv')
+    with open(ar_csv_path, 'w', newline='') as f:
+        for i, key in enumerate(mrps):
+            # convert the resolution of the shot to an aspect ratio
+            # set 0 if resolution is 0
+            if not mrps[key][1] == 0:
+                ar = mrps[key][0]/mrps[key][1]
+            else:
+                ar = 0
+
+            # calculate the distance of the shot aspect ratio to the ratios in the list
+            dist = [euclidean(ar, x) for x in tu_ar_float]
+            line = str(key)+' '+str(shot_timestamps[i][1])+' '+str(tu_ar_str[np.argmin(dist)])
+            f.write(line)
+            f.write('\n')
 #########################################################################################################
 
 
@@ -104,6 +130,10 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
                                                                         file_extension)
             max_res_pro_shot[video_name] = aux_res_dict
             resolution_template[video_name] = sorted(aux_res_dict.values(), reverse=True)[0]
+
+            # save the aspect ratio of the shot in a .csv-file
+            save_aspect_ratio_in_csv(max_res_pro_shot[video_name], frames_dir, shot_timestamps)
+
             # create a hidden file to signal that the image-extraction for a movie is done
             open(os.path.join(frames_dir, '.done'), 'a').close()
         elif os.path.isfile(os.path.join(frames_dir, '.done')):     # do nothing if a .done-file exists
@@ -112,7 +142,9 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
         elif os.path.isdir(os.path.join(frames_dir)) and not os.path.isfile(os.path.join(frames_dir, '.done')):
             shutil.rmtree(frames_dir)
 
-        #
+
+
+        # image extraction
         if not os.path.isdir(frames_dir) and not os.path.isfile(os.path.join(frames_dir, '.done')):
             print('starting image extraction')
             for start_frame, end_frame in tqdm(shot_timestamps):
