@@ -9,7 +9,6 @@ import numpy as np
 from crop_image import trim
 from PIL import Image
 from scipy.spatial.distance import euclidean
-import csv
 #################################################################
 
 
@@ -24,8 +23,6 @@ def read_shotdetect_xml(path):
     return timestamps  # in ms
 #############################################################################################
 # read video file frame by frame, beginning and ending with a timestamp
-
-
 def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file_extension):
     vid = cv2.VideoCapture(video_path)
     for i in range(int(end_ms/1000-start_ms/1000)+1):
@@ -85,11 +82,11 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
 
 
 def save_aspect_ratio_in_csv(mrps, frames_dir, shot_timestamps):
-
+    # print(mrps)
     # ar = [res[0]/(res[1]) if not res[1] == 0 else 0 for res in mrps.values()]
     tu_ar_float = [21.01/9, 21/9, 16/9, 4/3, 1/1, 3/4, 9/16, 9/16.01]
     tu_ar_str = ['>21/9', '21/9', '16/9', '4/3', '1/1', '3/4', '9/16', '<9/16']
-
+    # [2.3344444444444448, 2.3333333333333335, 1.7777777777777777, 1.3333333333333333, 1.0, 0.75, 0.5625, 0.5621486570893192]
     ar_csv_path = os.path.join(frames_dir, 'aspect_ratio_per_shot.csv')
     with open(ar_csv_path, 'w', newline='') as f:
         for i, key in enumerate(mrps):
@@ -102,6 +99,7 @@ def save_aspect_ratio_in_csv(mrps, frames_dir, shot_timestamps):
 
             # calculate the distance of the shot aspect ratio to the ratios in the list
             dist = [euclidean(ar, x) for x in tu_ar_float]
+            # print(ar, mrps[key][0], mrps[key][1], dist, np.argmin(dist), tu_ar_str[np.argmin(dist)])
             line = str(key)+' '+str(shot_timestamps[i][1])+' '+str(tu_ar_str[np.argmin(dist)])
             f.write(line)
             f.write('\n')
@@ -115,7 +113,6 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
     shot_timestamps = read_shotdetect_xml(os.path.join(f_path, 'shot_detection/result.xml'))
     # cut of the black borders of the movie
     if trim_frames == 'yes':
-        # save the unaltered frames and the resolution
         if not os.path.isdir(frames_dir) and not os.path.isfile(os.path.join(frames_dir, '.done')):
             print('extracting movie resolution ')
             aux_res_dict = {}   # save the max resolution of each shot of a movie in a dict, keys are the start_frame of the shot
@@ -131,21 +128,6 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
             max_res_pro_shot[video_name] = aux_res_dict
             resolution_template[video_name] = sorted(aux_res_dict.values(), reverse=True)[0]
 
-            # save the aspect ratio of the shot in a .csv-file
-            save_aspect_ratio_in_csv(max_res_pro_shot[video_name], frames_dir, shot_timestamps)
-
-            # create a hidden file to signal that the image-extraction for a movie is done
-            open(os.path.join(frames_dir, '.done'), 'a').close()
-        elif os.path.isfile(os.path.join(frames_dir, '.done')):     # do nothing if a .done-file exists
-            pass  # count the instances of the image-extraction done correctly
-        # if the folder already exists but the .done-file doesn't, delete the folder
-        elif os.path.isdir(os.path.join(frames_dir)) and not os.path.isfile(os.path.join(frames_dir, '.done')):
-            shutil.rmtree(frames_dir)
-
-
-
-        # image extraction
-        if not os.path.isdir(frames_dir) and not os.path.isfile(os.path.join(frames_dir, '.done')):
             print('starting image extraction')
             for start_frame, end_frame in tqdm(shot_timestamps):
                 # create a dir for a specific shot, the name are the boundaries in ms
@@ -153,14 +135,18 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
                 # compare the resolution, after trimming of the shot, with the maximum resolution in the movie
                 # and choose the larger resolution
                 if max_res_pro_shot[video_name][start_frame][0] < resolution_template[video_name][0]:
-                    frame_resolution = resolution_template[video_name]
-                else:
-                    frame_resolution = max_res_pro_shot[video_name][start_frame]
+                    max_res_pro_shot[video_name][start_frame] = resolution_template[video_name]
 
                 rescale_saved_frames(frames_path,
                                      start_frame, end_frame,
-                                     frame_resolution,
+                                     max_res_pro_shot[video_name][start_frame],
                                      file_extension)
+
+            # save the aspect ratio of the shot in a .csv-file
+            save_aspect_ratio_in_csv(max_res_pro_shot[video_name], frames_dir, shot_timestamps)
+
+            # create a hidden file to signal that the image-extraction for a movie is done
+            open(os.path.join(frames_dir, '.done'), 'a').close()
             done += 1  # count the instances of the image-extraction done correctly
         elif os.path.isfile(os.path.join(frames_dir, '.done')):     # do nothing if a .done-file exists
             done += 1  # count the instances of the image-extraction done correctly
