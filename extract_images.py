@@ -30,7 +30,7 @@ def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file
             vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*1000)
             ret, frame = vid.read()
             if frame_width:
-                print(frame_width)
+                # print(frame_width)
                 # resize the frame to according to the frame_width provided and the aspect ratio of the frame
                 resolution_old = np.shape(Image.fromarray(frame))
                 ratio = resolution_old[1]/resolution_old[0]
@@ -46,8 +46,18 @@ def rescale_saved_frames(frame_path, start_ms, end_ms, frame_resolution, file_ex
         if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
             name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
             frame = cv2.imread(name)
-            frame = cv2.resize(frame, frame_resolution)
+            # print('target_res: ', frame_resolution)
+            # print('res: ', np.shape(frame))
+            #
+            y = int((np.shape(frame)[0] - frame_resolution[1])/2)
+            x = int((np.shape(frame)[1] - frame_resolution[0])/2)
+            # print(np.shape(frame)[0], frame_resolution[1], y)
+            # print(np.shape(frame)[1], frame_resolution[0], x)
+
+            frame = frame[y:y+frame_resolution[1], x:x+frame_resolution[0], :]
+            # print(np.shape(frame))
             cv2.imwrite(name, frame)
+            # break
 
 
 def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_width, file_extension):
@@ -82,7 +92,6 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
 
 
 def save_aspect_ratio_in_csv(mrps, frames_dir, shot_timestamps):
-    # print(mrps)
     # ar = [res[0]/(res[1]) if not res[1] == 0 else 0 for res in mrps.values()]
     tu_ar_float = [21.01/9, 21/9, 16/9, 4/3, 1/1, 3/4, 9/16, 9/16.01]
     tu_ar_str = ['>21/9', '21/9', '16/9', '4/3', '1/1', '3/4', '9/16', '<9/16']
@@ -128,6 +137,9 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
             max_res_pro_shot[video_name] = aux_res_dict
             resolution_template[video_name] = sorted(aux_res_dict.values(), reverse=True)[0]
 
+            # save the aspect ratio of the shot in a .csv-file
+            save_aspect_ratio_in_csv(max_res_pro_shot[video_name], frames_dir, shot_timestamps)
+
             print('starting image extraction')
             for start_frame, end_frame in tqdm(shot_timestamps):
                 # create a dir for a specific shot, the name are the boundaries in ms
@@ -136,14 +148,11 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
                 # and choose the larger resolution
                 if max_res_pro_shot[video_name][start_frame][0] < resolution_template[video_name][0]:
                     max_res_pro_shot[video_name][start_frame] = resolution_template[video_name]
-
+                # print(start_frame, max_res_pro_shot[video_name][start_frame])
                 rescale_saved_frames(frames_path,
                                      start_frame, end_frame,
                                      max_res_pro_shot[video_name][start_frame],
                                      file_extension)
-
-            # save the aspect ratio of the shot in a .csv-file
-            save_aspect_ratio_in_csv(max_res_pro_shot[video_name], frames_dir, shot_timestamps)
 
             # create a hidden file to signal that the image-extraction for a movie is done
             open(os.path.join(frames_dir, '.done'), 'a').close()
