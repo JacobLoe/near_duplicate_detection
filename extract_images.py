@@ -19,7 +19,9 @@ def read_shotdetect_xml(path):
     for child in root[0].iter():
         if child.tag == 'shot':
             items = child.items()
-            timestamps.append((int(items[4][1]), int(items[4][1])+int(items[2][1])-1))  # ms
+            attribs = child.attrib
+               
+            timestamps.append((int(attribs['msbegin']), int(attribs['msbegin'])+int(attribs['msduration'])-1))  # ms
     return timestamps  # in ms
 #############################################################################################
 # read video file frame by frame, beginning and ending with a timestamp
@@ -30,7 +32,6 @@ def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file
             vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*1000)
             ret, frame = vid.read()
             if frame_width:
-                # print(frame_width)
                 # resize the frame to according to the frame_width provided and the aspect ratio of the frame
                 resolution_old = np.shape(Image.fromarray(frame))
                 ratio = resolution_old[1]/resolution_old[0]
@@ -46,18 +47,11 @@ def rescale_saved_frames(frame_path, start_ms, end_ms, frame_resolution, file_ex
         if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
             name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
             frame = cv2.imread(name)
-            # print('target_res: ', frame_resolution)
-            # print('res: ', np.shape(frame))
-            #
             y = int((np.shape(frame)[0] - frame_resolution[1])/2)
             x = int((np.shape(frame)[1] - frame_resolution[0])/2)
-            # print(np.shape(frame)[0], frame_resolution[1], y)
-            # print(np.shape(frame)[1], frame_resolution[0], x)
 
             frame = frame[y:y+frame_resolution[1], x:x+frame_resolution[0], :]
-            # print(np.shape(frame))
             cv2.imwrite(name, frame)
-            # break
 
 
 def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_width, file_extension):
@@ -125,7 +119,7 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
         if not os.path.isdir(frames_dir) and not os.path.isfile(os.path.join(frames_dir, '.done')):
             print('extracting movie resolution ')
             aux_res_dict = {}   # save the max resolution of each shot of a movie in a dict, keys are the start_frame of the shot
-            for start_frame, end_frame in tqdm(shot_timestamps):
+            for start_frame, end_frame in shot_timestamps:
                 frames_path = os.path.join(f_path, 'frames', str(start_frame))
                 if not os.path.isdir(frames_path):
                     os.makedirs(frames_path)
