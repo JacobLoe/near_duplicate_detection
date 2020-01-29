@@ -1,7 +1,5 @@
 #docker run --rm -it -v $(pwd)/../videos:/video:ro -v $(pwd)/static/features_videos:/data  jacobloe/extract_images:0.1 /video /data/
 
-#docker build -f Dockerfile_extract_images -t jacobloe/extract_images:0.1 .
-
 # opencv needs the python-stretch version
 FROM python:3.6.8-stretch 
 

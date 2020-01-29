@@ -1,6 +1,0 @@
-opencv-python
-argparse
-numpy
-tqdm
-tensorflow
-keras

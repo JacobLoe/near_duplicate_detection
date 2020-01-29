@@ -4,9 +4,10 @@ docker build -f Dockerfile_extract_images -t jacobloe/extract_images:0.1 .
 docker build -f Dockerfile_extract_features -t jacobloe/extract_features:0.1 .
 docker build -f Dockerfile_flask_query -t jacobloe/flask_query:0.1 .
 
+######################################################################################################################################
+
 # run
 # the features_path needs the static in the beginning to work with flask
-# :5000 has to be added to the adress in the browser,flask omits it
 docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_FEATURES:/data jacobloe/shot_detection:0.1 /video /data/
 
 # parameters:
@@ -19,10 +20,11 @@ docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_F
 # --file_extension choices: .jpg/.png default: .jpg     use the extension in which the frames were saved
 docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/data -v /home/.keras/:/root/.keras jacobloe/extract_features:0.1 /data/
 
+# :5000 has to be added to the adress in the browser,flask omits it
 # http://0.0.0.0:5000/imagesearch/
 docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/root/static -p 5000:80 jacobloe/flask_query:0.1
 
-#######################################################################################################################################
+######################################################################################################################################
 
 #create a subnet
 docker network create --driver bridge ndd_subnet
