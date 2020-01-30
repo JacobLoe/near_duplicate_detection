@@ -6,28 +6,66 @@ import shutil
 import numpy as np
 from PIL import Image
 from scipy.spatial.distance import euclidean
+import xml.etree.ElementTree as ET
 
-def save_aspect_ratio_to_csv(mrps, frames_dir, shot_timestamps):
-    # ar = [res[0]/(res[1]) if not res[1] == 0 else 0 for res in mrps.values()]
-    tu_ar_float = [21.01/9, 21/9, 16/9, 4/3, 1/1, 3/4, 9/16, 9/16.01]
-    tu_ar_str = ['>21/9', '21/9', '16/9', '4/3', '1/1', '3/4', '9/16', '<9/16']
-    # [2.3344444444444448, 2.3333333333333335, 1.7777777777777777, 1.3333333333333333, 1.0, 0.75, 0.5625, 0.5621486570893192]
-    # ar_csv_path = os.path.join(frames_dir, 'aspect_ratio_per_shot.csv')
-    # with open(ar_csv_path, 'w', newline='') as f:
-    #     for i, key in enumerate(mrps):
-    #         # convert the resolution of the shot to an aspect ratio
-    #         # set 0 if resolution is 0
-    #         if not mrps[key][1] == 0:
-    #             ar = mrps[key][0]/mrps[key][1]
-    #         else:
-    #             ar = 0
-    #
-    #         # calculate the distance of the shot aspect ratio to the ratios in the list
-    #         dist = [euclidean(ar, x) for x in tu_ar_float]
-    #         # print(ar, mrps[key][0], mrps[key][1], dist, np.argmin(dist), tu_ar_str[np.argmin(dist)])
-    #         line = str(key)+' '+str(shot_timestamps[i][1])+' '+str(tu_ar_str[np.argmin(dist)])
-    #         f.write(line)
-    #         f.write('\n')
+def read_shotdetect_xml(path):
+    tree = ET.parse(path)
+    root = tree.getroot().findall('content')
+    timestamps = []
+    for child in root[0].iter():
+        if child.tag == 'shot':
+            items = child.items()
+            attribs = child.attrib
+
+            timestamps.append((int(attribs['msbegin']), int(attribs['msbegin']) + int(attribs['msduration']) - 1))  # ms
+    return timestamps  # in ms
+
+def save_aspect_ratio_to_csv(f_path, file_extension, done):
+
+    shot_timestamps = read_shotdetect_xml(os.path.join(os.path.split(f_path)[0], 'shot_detection/result.xml'))
+
+    # create the path for the .csv
+    ar_dir_path = os.path.join(os.path.split(f_path)[0], 'aspect_ratio')
+
+    if not os.path.isdir(ar_dir_path) and not os.path.isfile(os.path.join(ar_dir_path, '.done')):
+        print('save aspect ratios for {}'.format(os.path.split(os.path.split(f_path)[0])[1]))
+        if not os.path.isdir(ar_dir_path):
+            os.makedirs(ar_dir_path)
+        ar_csv_path = os.path.join(ar_dir_path, 'aspect_ratio_per_shot.csv')
+
+        # define the list of possible aspect_ratios
+        tu_ar_float = [21.01/9, 21/9, 16/9, 4/3, 1/1, 3/4, 9/16, 9/16.01]
+        tu_ar_str = ['>21/9', '21/9', '16/9', '4/3', '1/1', '3/4', '9/16', '<9/16']
+
+        with open(ar_csv_path, 'w', newline='') as f:
+            for shot in tqdm(shot_timestamps):
+
+                frame = str(shot[0])+file_extension
+                shot_path = os.path.join(f_path, str(shot[0]), frame)
+                frame = Image.open(shot_path)
+
+                # convert the resolution of the shot to an aspect ratio
+                # set 0 if resolution is 0
+                if not np.shape(frame)[0] == 0:
+                    ar = np.shape(frame)[1]/np.shape(frame)[0]
+                else:
+                    ar = 0
+
+                # calculate the distance of the shot aspect ratio to the ratios in the list
+                dist = [euclidean(ar, x) for x in tu_ar_float]
+                line = str(shot[0])+' '+str(shot[1])+' '+str(tu_ar_str[np.argmin(dist)])
+                f.write(line)
+                f.write('\n')
+                open(os.path.join(ar_dir_path, '.done'), 'a').close()
+                done+=1
+    elif os.path.isfile(os.path.join(ar_dir_path, '.done')):  # do nothing if a .done-file exists
+        done += 1  # count the instances of the image-extraction done correctly
+        print('image-extraction was already done for {}'.format(os.path.split(os.path.split(f_path)[0])[1]))
+    # if the folder already exists but the .done-file doesn't, delete the folder
+    elif os.path.isdir(os.path.join(ar_dir_path)) and not os.path.isfile(os.path.join(ar_dir_path, '.done')):
+        shutil.rmtree(ar_dir_path)
+        print('image-extraction was not done correctly for {}'.format(os.path.split(os.path.split(f_path)[0])[1]))
+    return done
 
 
 def main(features_path, file_extension):
@@ -40,7 +78,6 @@ def main(features_path, file_extension):
         print('-------------------------------------------------------')
         for f_path in tqdm(list_features_path, total=len(list_features_path)):
             done = save_aspect_ratio_to_csv(f_path, file_extension, done)
-
 
 if __name__ == "__main__":
 

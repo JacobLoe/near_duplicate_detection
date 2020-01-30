@@ -1,12 +1,12 @@
 # build
 docker build -f Dockerfile_shot_detection -t jacobloe/shot_detection:0.1 .
 docker build -f Dockerfile_extract_images -t jacobloe/extract_images:0.1 .
+docker build -f Dockerfile_extract_aspect_ratio -t jacobloe/extract_aspect_ratio:0.1 .
 docker build -f Dockerfile_extract_features -t jacobloe/extract_features:0.1 .
 docker build -f Dockerfile_flask_query -t jacobloe/flask_query:0.1 .
 
 ######################################################################################################################################
 
-# run
 # the features_path needs the static in the beginning to work with flask
 docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_FEATURES:/data jacobloe/shot_detection:0.1 /video /data/
 
@@ -15,6 +15,10 @@ docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_F
 # --frame_width default: no changes to resolution       set the width at which the frames are saved
 # --file_extension choices: .jpg/.png default: .jpg     define the file-extension of the frames
 docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_FEATURES:/data jacobloe/extract_images:0.1 /video /data/
+
+# parameters:
+# --file_extension choices: .jpg/.png default: .jpg     use the extension in which the frames were saved
+docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/data -v /home/.keras/:/root/.keras jacobloe/extract_aspect_ratio:0.1 /data/
 
 # parameters:
 # --file_extension choices: .jpg/.png default: .jpg     use the extension in which the frames were saved

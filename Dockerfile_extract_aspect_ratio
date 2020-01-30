@@ -1,0 +1,18 @@
+#docker run --rm -it -v $(pwd)/static/features_videos:/data -v /home/.keras/:/root/.keras jacobloe/extract_aspect_ratio:0.1 /data/
+
+# opencv needs the python-stretch version
+FROM python:3.6.8-stretch 
+
+ENV DEBIAN_FRONTEND noninteractive
+
+COPY requirements_extract_aspect_ratio.txt /root
+
+RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_extract_aspect_ratio.txt
+
+COPY extract_aspect_ratio.py /root
+
+VOLUME "/data"
+
+WORKDIR /root
+
+ENTRYPOINT ["python3", "extract_aspect_ratio.py"]

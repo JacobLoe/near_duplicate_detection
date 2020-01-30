@@ -1,7 +1,5 @@
 #docker run --rm -it -v $(pwd)/static/features_videos:/data -v /home/.keras/:/root/.keras jacobloe/extract_features:0.1 /data/
 
-#docker build -f Dockerfile_extract_features -t jacobloe/extract_features:0.1 .
-
 # Use an official Python runtime as a parent image
 FROM python:3.6.8-stretch
 
