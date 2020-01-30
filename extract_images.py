@@ -31,6 +31,7 @@ def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file
         if not (start_ms/1000+i) == (int(end_ms/1000-start_ms/1000)+1):
             vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*1000)
             ret, frame = vid.read()
+            print(np.shape(frame))
             if frame_width:
                 # resize the frame to according to the frame_width provided and the aspect ratio of the frame
                 resolution_old = np.shape(Image.fromarray(frame))

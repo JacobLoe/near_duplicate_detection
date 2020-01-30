@@ -1,3 +1,5 @@
+#docker run --rm -it -v $(pwd)/static/features_videos/:/root/static -v /home/.keras/:/root/.keras -v $(pwd)/features_pickle/:/root/features_pickle/ -p 9000:9000 --network ndd_subnet --name server_ndd jacobloe/server_ndd:0.1 --num_cores 8 --features_dtype float16
+
 FROM python:3.6.8-stretch
 
 ENV DEBIAN_FRONTEND noninteractive
