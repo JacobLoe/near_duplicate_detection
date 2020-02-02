@@ -8,9 +8,11 @@ ENV DEBIAN_FRONTEND noninteractive
 COPY requirements_extract_images.txt /root
 
 RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_extract_images.txt
+RUN apt update && apt install -y ffmpeg
 
 COPY extract_images.py /root
 COPY crop_image.py /root
+COPY video_aspect_ratio.py /root
 
 VOLUME "/video"
 VOLUME "/data"

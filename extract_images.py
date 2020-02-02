@@ -37,7 +37,7 @@ def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file
             # check if the correct aspect ratio is used
             height, width, chan = frame.shape
             new_height, new_width = height, width * pixel_aspect_ratio
-            frame = cv2.resize(frame, (int(new_height), int(new_width)))
+            frame = cv2.resize(frame, (int(new_width), int(new_height)))
             assert storage_aspect_ratio == vid.get(cv2.CAP_PROP_FRAME_WIDTH) / vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
             if frame_width:
@@ -54,6 +54,7 @@ def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file
 
 def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_width, file_extension):
     vid = cv2.VideoCapture(video_path)
+    display_aspect_ratio, pixel_aspect_ratio, storage_aspect_ratio = get_aspect_ratios(video_path)
     shot_resolutions = []
     for i in range(int(end_ms / 1000 - start_ms / 1000) + 1):
         if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
@@ -63,8 +64,8 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
             # check if the correct aspect ratio is used
             height, width, chan = frame.shape
             new_height, new_width = height, width * pixel_aspect_ratio
-            frame = cv2.resize(frame, (int(new_height), int(new_width)))
-            assert storage_aspect_ratio == vid.get(cv2.CAP_PROP_FRAME_WIDTH) / vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            frame = cv2.resize(frame, (int(new_width), int(new_height)))
+            # assert storage_aspect_ratio == vid.get(cv2.CAP_PROP_FRAME_WIDTH) / vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
             if frame_width:
                 # resize the frame to according to the frame_width provided and the aspect ratio of the frame
@@ -110,7 +111,7 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
     # cut off the black borders of the movie
     if trim_frames == 'yes':
         if not os.path.isdir(frames_dir) and not os.path.isfile(os.path.join(frames_dir, '.done')):
-            print('extracting movie resolution ')
+            print('extracting movie resolution for {}'.format(os.path.split(v_path)[1]))
             aux_res_dict = {}   # save the max resolution of each shot of a movie in a dict, keys are the start_frame of the shot
             for start_frame, end_frame in tqdm(shot_timestamps):
                 frames_path = os.path.join(f_path, 'frames', str(start_frame))
@@ -150,7 +151,7 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
 
     else:
         if not os.path.isdir(frames_dir) and not os.path.isfile(os.path.join(frames_dir, '.done')):
-            print('starting image extraction')
+            print('starting image extraction for {}'.format(os.path.split(v_path)[1]))
             for start_frame, end_frame in tqdm(shot_timestamps):
                 # create a dir for a specific shot, the name are the boundaries in ms
                 frames_path = os.path.join(f_path, 'frames', str(start_frame))
