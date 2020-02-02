@@ -9,6 +9,7 @@ import numpy as np
 from crop_image import trim
 from PIL import Image
 from scipy.spatial.distance import euclidean
+from video_aspect_ratio import get_aspect_ratios
 #################################################################
 
 
@@ -27,18 +28,26 @@ def read_shotdetect_xml(path):
 # read video file frame by frame, beginning and ending with a timestamp
 def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file_extension):
     vid = cv2.VideoCapture(video_path)
+    display_aspect_ratio, pixel_aspect_ratio, storage_aspect_ratio = get_aspect_ratios(video_path)
     for i in range(int(end_ms/1000-start_ms/1000)+1):
         if not (start_ms/1000+i) == (int(end_ms/1000-start_ms/1000)+1):
             vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*1000)
             ret, frame = vid.read()
-            print(np.shape(frame))
+
+            # check if the correct aspect ratio is used
+            height, width, chan = frame.shape
+            new_height, new_width = height, width * pixel_aspect_ratio
+            frame = cv2.resize(frame, (int(new_height), int(new_width)))
+            assert storage_aspect_ratio == vid.get(cv2.CAP_PROP_FRAME_WIDTH) / vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
             if frame_width:
-                # resize the frame to according to the frame_width provided and the aspect ratio of the frame
+                # resize the frame according to the frame_width provided and the aspect ratio of the frame
                 resolution_old = np.shape(Image.fromarray(frame))
                 ratio = resolution_old[1]/resolution_old[0]
                 frame_height = int(frame_width/ratio)
                 resolution_new = (frame_width, frame_height)
                 frame = cv2.resize(frame, resolution_new)
+
             name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
             cv2.imwrite(name, frame)
 
@@ -50,6 +59,12 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
         if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
             vid.set(cv2.CAP_PROP_POS_MSEC, start_ms + i * 1000)
             ret, frame = vid.read()
+
+            # check if the correct aspect ratio is used
+            height, width, chan = frame.shape
+            new_height, new_width = height, width * pixel_aspect_ratio
+            frame = cv2.resize(frame, (int(new_height), int(new_width)))
+            assert storage_aspect_ratio == vid.get(cv2.CAP_PROP_FRAME_WIDTH) / vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
             if frame_width:
                 # resize the frame to according to the frame_width provided and the aspect ratio of the frame
