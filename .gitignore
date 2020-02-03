@@ -1,22 +1,5 @@
 /static
-/0_static
-/test
 /__pycache__
-/results.html
-/results_filtered.html
 /.idea
-/target_image.png
-/target_image.jpg
-/alt
-/features
 /features_pickle
-/extract_features_old.py
-/feature_distance.py
-/static_720p
-/static_480p
-/static (copy)
-/static_480
-/static_719
-/static_resized
-/static_test
 /ar.txt

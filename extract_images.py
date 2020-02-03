@@ -77,7 +77,7 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
 
             # use the trim function and save the resulting resolution
             frame_array = Image.fromarray(frame)
-            # frame_array = trim(frame_array)
+            frame_array = trim(frame_array)
             shot_resolutions.append(np.shape(frame_array))
 
             # save the frame for later use
@@ -131,7 +131,7 @@ def extract_images(v_path, f_path, file_extension, done, max_res_pro_shot, resol
                 frames_path = os.path.join(f_path, 'frames', str(start_frame))
                 # compare the resolution, after trimming of the shot, with the maximum resolution in the movie
                 # and choose the larger resolution
-                if max_res_pro_shot[video_name][start_frame][0] < resolution_template[video_name][0]:
+                if max_res_pro_shot[video_name][start_frame][0] == 0:
                     max_res_pro_shot[video_name][start_frame] = resolution_template[video_name]
                 crop_saved_frames(frames_path,
                                      start_frame, end_frame,
