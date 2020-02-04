@@ -29,16 +29,17 @@ def read_shotdetect_xml(path):
 def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file_extension):
     vid = cv2.VideoCapture(video_path)
     display_aspect_ratio, pixel_aspect_ratio, storage_aspect_ratio = get_aspect_ratios(video_path)
+
     for i in range(int(end_ms/1000-start_ms/1000)+1):
         if not (start_ms/1000+i) == (int(end_ms/1000-start_ms/1000)+1):
-            vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*1000)
+            vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*950)
             ret, frame = vid.read()
 
             # check if the correct aspect ratio is used
             height, width, chan = frame.shape
             new_height, new_width = height, width * pixel_aspect_ratio
             frame = cv2.resize(frame, (int(new_width), int(new_height)))
-            assert storage_aspect_ratio == vid.get(cv2.CAP_PROP_FRAME_WIDTH) / vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            # assert storage_aspect_ratio == vid.get(cv2.CAP_PROP_FRAME_WIDTH) / vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
             if frame_width:
                 # resize the frame according to the frame_width provided and the aspect ratio of the frame
@@ -48,7 +49,7 @@ def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file
                 resolution_new = (frame_width, frame_height)
                 frame = cv2.resize(frame, resolution_new)
 
-            name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
+            name = os.path.join(frame_path, (str(start_ms+i*950)+file_extension))
             cv2.imwrite(name, frame)
 
 
@@ -58,7 +59,7 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
     shot_resolutions = []
     for i in range(int(end_ms / 1000 - start_ms / 1000) + 1):
         if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
-            vid.set(cv2.CAP_PROP_POS_MSEC, start_ms + i * 1000)
+            vid.set(cv2.CAP_PROP_POS_MSEC, start_ms + i * 950)
             ret, frame = vid.read()
 
             # check if the correct aspect ratio is used
@@ -81,7 +82,7 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
             shot_resolutions.append(np.shape(frame_array))
 
             # save the frame for later use
-            name = os.path.join(frame_path, (str(start_ms + i * 1000) + file_extension))
+            name = os.path.join(frame_path, (str(start_ms + i * 950) + file_extension))
             cv2.imwrite(name, frame)
 
     max_shot_resolution = sorted(shot_resolutions, reverse=True)
@@ -93,7 +94,7 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
 def crop_saved_frames(frame_path, start_ms, end_ms, frame_resolution, file_extension):
     for i in range(int(end_ms / 1000 - start_ms / 1000) + 1):
         if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
-            name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
+            name = os.path.join(frame_path, (str(start_ms+i*950)+file_extension))
             frame = cv2.imread(name)
             y = int((np.shape(frame)[0] - frame_resolution[1])/2)
             x = int((np.shape(frame)[1] - frame_resolution[0])/2)
