@@ -8,7 +8,6 @@ import shutil
 import numpy as np
 from crop_image import trim
 from PIL import Image
-from scipy.spatial.distance import euclidean
 from video_aspect_ratio import get_aspect_ratios
 #################################################################
 
@@ -79,6 +78,8 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
             # use the trim function and save the resulting resolution
             frame_array = Image.fromarray(frame)
             frame_array = trim(frame_array)
+            # frame_array, bounding_box = trim(frame_array)
+            # shot_resolutions.append(np.shape(frame_array)])
             shot_resolutions.append(np.shape(frame_array))
 
             # save the frame for later use
