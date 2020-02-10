@@ -31,7 +31,7 @@ def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file
 
     for i in range(int(end_ms/1000-start_ms/1000)+1):
         if not (start_ms/1000+i) == (int(end_ms/1000-start_ms/1000)+1):
-            vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*950)
+            vid.set(cv2.CAP_PROP_POS_MSEC, start_ms+i*1000)
             ret, frame = vid.read()
 
             # check if the correct aspect ratio is used
@@ -48,7 +48,7 @@ def save_shot_frames(video_path, frame_path, start_ms, end_ms, frame_width, file
                 resolution_new = (frame_width, frame_height)
                 frame = cv2.resize(frame, resolution_new)
 
-            name = os.path.join(frame_path, (str(start_ms+i*950)+file_extension))
+            name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
             cv2.imwrite(name, frame)
 
 
@@ -58,7 +58,7 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
     shot_resolutions = []
     for i in range(int(end_ms / 1000 - start_ms / 1000) + 1):
         if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
-            vid.set(cv2.CAP_PROP_POS_MSEC, start_ms + i * 950)
+            vid.set(cv2.CAP_PROP_POS_MSEC, start_ms + i * 1000)
             ret, frame = vid.read()
 
             # check if the correct aspect ratio is used
@@ -83,7 +83,7 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
             shot_resolutions.append(np.shape(frame_array))
 
             # save the frame for later use
-            name = os.path.join(frame_path, (str(start_ms + i * 950) + file_extension))
+            name = os.path.join(frame_path, (str(start_ms + i * 1000) + file_extension))
             cv2.imwrite(name, frame)
 
     max_shot_resolution = sorted(shot_resolutions, reverse=True)
@@ -95,7 +95,7 @@ def get_trimmed_shot_resolution(video_path, frame_path, start_ms, end_ms, frame_
 def crop_saved_frames(frame_path, start_ms, end_ms, frame_resolution, file_extension):
     for i in range(int(end_ms / 1000 - start_ms / 1000) + 1):
         if not (start_ms / 1000 + i) == (int(end_ms / 1000 - start_ms / 1000) + 1):
-            name = os.path.join(frame_path, (str(start_ms+i*950)+file_extension))
+            name = os.path.join(frame_path, (str(start_ms+i*1000)+file_extension))
             frame = cv2.imread(name)
             y = int((np.shape(frame)[0] - frame_resolution[1])/2)
             x = int((np.shape(frame)[1] - frame_resolution[0])/2)
