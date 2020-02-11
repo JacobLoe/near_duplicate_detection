@@ -8,5 +8,4 @@ def trim(im):
     diff = ImageChops.add(diff, diff, 2.0, -12)
     bbox = diff.getbbox()
     if bbox:
-        return im.crop(bbox)
-        #return im.crop(bbox), bbox
+        return im.crop(bbox), bbox
