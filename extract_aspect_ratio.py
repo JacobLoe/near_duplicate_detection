@@ -9,7 +9,7 @@ from scipy.spatial.distance import euclidean
 import xml.etree.ElementTree as ET
 
 FRAME_OFFSET_MS = 3*41  # frame offset in ms, one frame equals ~42ms, this jumps 3 frames ahead
-
+ASPECT_RATIO_BOUND = 0.01   # is added to the aspect ratios 21/9 and 9/16 to create >21/9 and <9/16
 
 def read_shotdetect_xml(path):
     tree = ET.parse(path)
@@ -38,7 +38,7 @@ def save_aspect_ratio_to_csv(f_path, file_extension, done):
         ar_csv_path = os.path.join(ar_dir_path, 'aspect_ratio_per_shot.csv')
 
         # define the list of possible aspect_ratios
-        tu_ar_float = [21.01/9, 21/9, 16/9, 4/3, 1/1, 3/4, 9/16, 9/16.01]
+        tu_ar_float = [(21+ASPECT_RATIO_BOUND)/9, 21/9, 16/9, 4/3, 1/1, 3/4, 9/16, 9/(16+ASPECT_RATIO_BOUND)]
         tu_ar_str = ['>21/9', '21/9', '16/9', '4/3', '1/1', '3/4', '9/16', '<9/16']
 
         with open(ar_csv_path, 'w', newline='') as f:
