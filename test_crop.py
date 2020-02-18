@@ -1,13 +1,7 @@
-from PIL import Image, ImageChops
+from PIL import Image
 import numpy as np
+from crop_image import trim
 
-def trim(im, threshold):
-    bg = Image.new(im.mode, im.size, im.getpixel((0, 0)))
-    diff = ImageChops.difference(im, bg)
-    diff = ImageChops.add(diff, diff, 2.0, -threshold)
-    bbox = diff.getbbox()
-    if bbox:
-        return im.crop(bbox)
 
 im0 = np.asarray(Image.open('test_images/172040.jpg'))[62:156, :, :]
 im1 = np.asarray(Image.open('test_images/612240.jpg'))[:, 48:466, :]
@@ -25,18 +19,22 @@ images = [Image.open('test_images/172040.jpg'), Image.open('test_images/612240.j
           Image.open('test_images/641720.jpg'), Image.open('test_images/645040.jpg'), Image.open('test_images/646240.jpg'),
           Image.open('test_images/647920.jpg'), Image.open('test_images/650320.jpg'), Image.open('test_images/1226440.jpg'),
           Image.open('test_images/1999320.jpg')]
+
 cc = {}
-for t in [10, 12, 15, 25]: #5,7,10,12,15,17,
+for t in range(100):
     c = []
     for i, image in enumerate(images):
-
-        # print('optimal crop shape', np.shape(images_optimal_crop[i]))
-        a = trim(image, t)
-        # print('trim shape', np.shape(a))
+        a, _ = trim(image, t)
         residuals = [np.shape(a)[j]-x for j, x in enumerate(np.shape(images_optimal_crop[i]))]
         c.append(residuals)
-        # print('residuals', residuals)
-        # print('\n')
     cc[str(t)] = c
+scores = {}
 for key in cc:
-    print(key, cc[key])
+    aux = 0
+    for i in cc[key]:
+        for j in i:
+            aux += np.absolute(j)
+    scores[key] = aux
+    # print(key, cc[key])
+# print(scores)
+print(min(scores, key=scores.get))

@@ -11,6 +11,7 @@ from PIL import Image
 from video_aspect_ratio import get_aspect_ratios
 
 FRAME_OFFSET_MS = 3*41  # frame offset in ms, one frame equals ~41ms, this jumps 3frames ahead
+TRIM_THRESHOLD = 12     # defines the threshold
 #################################################################
 
 
@@ -84,7 +85,7 @@ def get_trimmed_shot_resolution(video_path, frames_path, start_ms, end_ms, frame
         # get the trimmed frame and the corresponding bounding box
         # if none exist define both as empty sets
         try:
-            frame_array, bounding_box = trim(frame_array)
+            frame_array, bounding_box = trim(frame_array, TRIM_THRESHOLD)
         except:
             frame_array = ()
             bounding_box = ()

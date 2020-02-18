@@ -21,6 +21,8 @@ import numpy as np
 import pickle
 import argparse
 
+TRIM_THRESHOLD = 12
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
@@ -125,7 +127,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         target_image = Image.open(BytesIO(base64.b64decode(target_image)))
         if post_data['remove_letterbox'] == 'True':
             logger.info('removed letterbox in target image')
-            target_image = trim(target_image)
+            target_image, _ = trim(target_image, TRIM_THRESHOLD)
 
         buf = BytesIO()
         target_image.save(buf, 'PNG')
