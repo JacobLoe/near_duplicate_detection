@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 
 FRAME_OFFSET_MS = 3*41  # frame offset in ms, one frame equals ~42ms, this jumps 3 frames ahead
 
+
 def read_shotdetect_xml(path):
     tree = ET.parse(path)
     root = tree.getroot().findall('content')
@@ -33,7 +34,8 @@ def save_aspect_ratio_to_csv(f_path, file_extension, done):
         print('save aspect ratios for {}'.format(os.path.split(os.path.split(f_path)[0])[1]))
         if not os.path.isdir(ar_dir_path):
             os.makedirs(ar_dir_path)
-        ar_csv_path = os.path.join(ar_dir_path, 'aspect_ratio_per_shot.csv')
+
+        ar_csv_path = os.path.join(ar_dir_path, 'aspect_ratio_per_shot_'+os.path.split(os.path.split(f_path)[0])[1]+'.csv')
 
         # define the list of possible aspect_ratios
         tu_ar_float = [2.55, 21./9., 16./9., 4./3., 1./1., 3./4., 9./16., 9./21.]
@@ -90,7 +92,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
-    parser.add_argument("--file_extension", default='.jpg', choices=('.jpg', '.png'), help="define the file-extension of the frames, only .png and .jpg are supported, default is .jpg")
+    parser.add_argument("--file_extension", default='.jpeg', choices=('.jpeg', '.png'), help="define the file-extension of the frames, only .png and .jpg are supported, default is .jpg")
     args = parser.parse_args()
 
     main(args.features_dir, args.file_extension)
