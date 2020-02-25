@@ -3,6 +3,7 @@ import json
 import urllib.parse
 import datetime
 import logging
+from functools import partial
 
 from extract_features import extract_features, load_model
 from crop_image import trim
@@ -33,9 +34,8 @@ logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--num_cores", type=int, default=4, help="specify the number cpu cores used for distance calculation, default value is 4")
-parser.add_argument("--features_dtype", default='float16', help="set the dtype of the features, default is float16")
-parser.add_argument("--file_extension", default='.jpeg', choices=('.jpeg', '.png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpeg")
+# FIXME: this should be derived from the existing files matching the features found in rder to avoid problems:
+parser.add_argument("--file_extension", default='.jpg', choices=('.jpg', '.png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpg")
 args = parser.parse_args()
 
 inception_model = load_model()
@@ -69,37 +69,18 @@ def get_features(features_path):
         frame_timestamp.append(i_ft[1][:-4])  # save the specific timestamp the feature is at
         frame_path.append(i_fp)  # save the path of the feature
 
-    features = {'feature_list': feature_list}
+    features = np.asarray(feature_list)
     info = {'source_video': source_video, 'shot_begin_frame': shot_begin_frame, 'frame_timestamp': frame_timestamp, 'frame_path': frame_path}
     logger.info('done')
     return features, info
 
 
-pickle_features = 'features_pickle/features.pickle'
-if os.path.isfile(pickle_features):
-    logger.info('load pickled features')
-    with open(pickle_features, 'rb') as handle:
-        features_server, info_server = pickle.load(handle)
-    logger.info('done')
-else:
-    features_server, info_server = get_features('static')
-    logger.info('save features with pickle')
-    with open(pickle_features, 'wb') as handle:
-        pickle.dump([features_server, info_server], handle)
-    logger.info('done')
-
-archive_features = np.asarray(features_server['feature_list'], dtype=args.features_dtype)
-
-
-def compute_batch(start_idx, batch_size, Y):
-
-    global archive_features
-
-    dists = euclidean_distances(archive_features[start_idx:start_idx+batch_size, :], Y)
-    return dists
-
-
 class RESTHandler(http.server.BaseHTTPRequestHandler):
+    def __init__(self, features, features_norm_sq, *args, **kwargs):
+        logger.debug("RESTHandler::__init__")
+        self.X = features
+        self.X_norm_sq = features_norm_sq
+        super().__init__(*args, **kwargs)
 
     def do_HEAD(s):
         s.send_response(200)
@@ -146,21 +127,14 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
         # calculate the distance for all features
         logger.info('calculating the distance for all features')
-        logger.debug(archive_features.shape)
+        logger.debug(s.X.shape)
 
-        f_size = archive_features.shape[0]   # the amount of features
-        nproc = args.num_cores if args.num_cores > 0 else mp.cpu_count()    # number of cpu jobs
-        logger.info("Using {nproc} cpus".format(nproc=nproc))
-        batch_size = int(float(f_size)/nproc)
-
-        compute_batch_ = functools.partial(compute_batch, batch_size=batch_size, Y=target_feature)
-
-        with mp.Pool(nproc) as pool:
-            distances = list(pool.imap(compute_batch_, [i for i in range(0, f_size, batch_size)]))
-
-        distances = np.concatenate(distances)
-        distances = np.reshape(distances, distances.shape[0])
+        A = np.dot(s.X, target_feature.T)
+        B = np.dot(target_feature,target_feature.T)
+        distances = s.X_norm_sq -2*A + B
         logger.info('calculated all distances')
+        distances = np.reshape(distances, distances.shape[0])
+        logger.debug(distances.shape)
 
         # sort by distance, ascending
         logger.info("sorting distances")
@@ -211,12 +185,29 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
+    pickle_features = 'features_pickle/features.pickle'
+    if os.path.isfile(pickle_features):
+        logger.info('load pickled features')
+        with open(pickle_features, 'rb') as handle:
+            features_server, info_server = pickle.load(handle)
+        logger.info('done')
+    else:
+        features_server, info_server = get_features('static')
+        logger.info('save features with pickle')
+        with open(pickle_features, 'wb') as handle:
+            pickle.dump([features_server, info_server], handle)
+        logger.info('done')
+
 
     HOST_NAME = ''
     PORT_NUMBER = 9000
+    
+    archive_features_norm_sq = (features_server**2).sum(axis=1).reshape(-1,1)
 
+
+    handler = partial(RESTHandler, features_server, archive_features_norm_sq)
     server_class = http.server.HTTPServer
-    httpd = server_class((HOST_NAME, PORT_NUMBER), RESTHandler)
+    httpd = server_class((HOST_NAME, PORT_NUMBER), handler)
     logger.info("Starting dummy REST server on %s:%d", HOST_NAME, PORT_NUMBER)
     try:
         print('server ready')
