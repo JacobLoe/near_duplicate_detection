@@ -35,6 +35,7 @@ logger.propagate = False    # prevent log messages from appearing twice
 parser = argparse.ArgumentParser()
 parser.add_argument("--num_cores", type=int, default=4, help="specify the number cpu cores used for distance calculation, default value is 4")
 parser.add_argument("--features_dtype", default='float16', help="set the dtype of the features, default is float16")
+parser.add_argument("--file_extension", default='.jpeg', choices=('.jpeg', '.png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpeg")
 args = parser.parse_args()
 
 inception_model = load_model()
@@ -60,7 +61,7 @@ def get_features(features_path):
         i_sv = os.path.split(os.path.split(i_sbf[0])[0])  # the name of the videofile of the feature
 
         # recreate the path to the image from the path to the feature
-        i_fp = os.path.join(i_sv[0], i_sv[1], 'frames', i_sbf[1], i_ft[1][:-4]+'.jpg')  # the path to image corresponding to the feature
+        i_fp = os.path.join(i_sv[0], i_sv[1], 'frames', i_sbf[1], i_ft[1][:-4]+args.file_extension)  # the path to image corresponding to the feature
 
         # add information for the frame
         source_video.append(i_sv[1])  # save the name of the source video
