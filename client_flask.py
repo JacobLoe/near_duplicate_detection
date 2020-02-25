@@ -16,6 +16,11 @@ import time
 UPLOAD_FOLDER = ''
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
+if 'IMAGESEARCH_HOST' in os.environ:
+   IMAGESEARCH_HOST = os.environ['IMAGESEARCH_HOST']
+else:
+   IMAGESEARCH_HOST = 'localhost'
+
 
 def write_html_str(results, target_image):
 
@@ -121,7 +126,7 @@ def upload_file():
             target_image = buf.getvalue()
             target_image = base64.encodebytes(target_image).decode('ascii')
 
-            url = 'http://server_ndd:9000/'  # the name assigned in the docker subnet
+            url = 'http://{hostname}:9000/'.format(hostname=IMAGESEARCH_HOST)  # the name assigned in the docker subnet
 
             server_options = {}
             try:
