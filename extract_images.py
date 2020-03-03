@@ -89,16 +89,13 @@ def get_trimmed_shot_resolution(video_path, frames_path, start_ms, end_ms, frame
             frame_array, bounding_box = trim(frame_array, TRIM_THRESHOLD)
         except:
             bounding_box = (0, 0, np.shape(frame_array)[1], np.shape(frame_array)[0])
-            # print('bounding box', bounding_box)
-            # print('+++++++++++++++++++++++++++++++++++++')
-            # print(asddsa)
         bounding_boxes.append(bounding_box)
 
         # save the frame for later use
         name = os.path.join(frames_path, (str(timestamp) + file_extension))
         cv2.imwrite(name, frame)
 
-    # if the shot is to short return a empty/invalid bounding box
+    # if the shot is too short return a empty/invalid bounding box
     if not bounding_boxes:
         return np.array((0, 0, 0, 0))   # FIXME find a better solution to deal with the emtpy shots
 
