@@ -13,7 +13,7 @@ for shot in tqdm(os.listdir(cf_path)):
     if not shot == '.done':
         o = os.path.join(cf_path, shot, shot)
         p = os.path.join(ff_path, shot, shot)
-        oo = Image.open(o+'.jpg')
-        pp = Image.open(p+'.jpg')
-        oo.save(os.path.join(fc_path, shot)+'_0.jpg')
-        pp.save(os.path.join(fc_path, shot)+'_1.jpg')
+        oo = Image.open(o+'.jpeg')
+        pp = Image.open(p+'.jpeg')
+        oo.save(os.path.join(fc_path, shot)+'_0.jpeg')
+        pp.save(os.path.join(fc_path, shot)+'_1.jpeg')
