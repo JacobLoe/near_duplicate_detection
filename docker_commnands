@@ -14,20 +14,16 @@ docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_F
 # parameters:
 # --trim_frames choices: yes/no default: no             decide whether to remove or keep black borders in the movies
 # --frame_width default: no changes to resolution       set the width at which the frames are saved
-# --file_extension choices: .jpg/.png default: .jpg     define the file-extension of the frames
+# --file_extension choices: .jpeg/.png default: .jpeg     define the file-extension of the frames
 docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_FEATURES:/data jacobloe/extract_images:0.1 /video /data/
 
 # parameters:
-# --file_extension choices: .jpg/.png default: .jpg     use the extension in which the frames were saved
+# --file_extension choices: .jpeg/.png default: .jpeg     use the extension in which the frames were saved
 docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/data -v /home/.keras/:/root/.keras jacobloe/extract_aspect_ratio:0.1 /data/
 
 # parameters:
-# --file_extension choices: .jpg/.png default: .jpg     use the extension in which the frames were saved
+# --file_extension choices: .jpeg/.png default: .jpeg     use the extension in which the frames were saved
 docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/data -v /home/.keras/:/root/.keras jacobloe/extract_features:0.1 /data/
-
-# :5000 has to be added to the adress in the browser,flask omits it
-# http://0.0.0.0:5000/imagesearch/
-docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/root/static -p 5000:80 jacobloe/flask_query:0.1
 
 ######################################################################################################################################
 
@@ -41,4 +37,6 @@ docker network create --driver bridge ndd_subnet
 docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES/:/root/static -v /home/.keras/:/root/.keras -v $(pwd)/features_pickle/:/root/features_pickle/ -p 9000:9000 --network ndd_subnet --name server_ndd jacobloe/server_ndd:0.1
 
 #docker client_flask.py
+# :8000 has to be added to the adress in the browser,flask omits it
+# http://0.0.0.0:8000/imagesearch/
 docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES/:/root/static -p 8000:80 --network ndd_subnet --name client_flask jacobloe/client_flask:0.1

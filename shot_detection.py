@@ -3,7 +3,9 @@ import argparse
 import os
 import glob
 import shutil
-#########################################################################################################
+
+VERSION = '20200425'      # the version of the script
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("videos_dir", help="the directory where the video-files are stored")
@@ -23,10 +25,12 @@ if __name__ == "__main__":
     while done < len(list_features_path):  # repeat until all movies in the list have been processed correctly
         print('-------------------------------------------------------')
         for v_path, f_path in zip(list_videos_path, list_features_path):
+            video_name = os.path.split(v_path)[1]
+            done_file_path = os.path.join(f_path, '.done')
             # create a folder for the shot-detection results
-            if not os.path.isdir(f_path) and not os.path.isfile(os.path.join(f_path, '.done')):
+            if not os.path.isdir(f_path):
                 os.makedirs(f_path)
-                print('start shotdetection for {}'.format(os.path.split(v_path)[1]))
+                print('start shotdetection for {}'.format(video_name))
 
                 keywords = ['-i', v_path,
                             '-o', f_path,
@@ -40,12 +44,20 @@ if __name__ == "__main__":
                 log_file = os.path.join(f_path, 'log.txt')
                 with open(log_file, 'w') as f:
                     f.write(str(p.stderr))
-                # create a hidden file to signal that the shot-detection for a movie is done
-                open(os.path.join(f_path, '.done'), 'a').close()
-                done += 1   # count the instances of shot-detection done correctly
-            elif os.path.isfile(os.path.join(f_path, '.done')):
-                done += 1   # count the instances of shot-detection done correctly
-                print('shot-detection was already done for {}'.format(os.path.split(v_path)[1]))
-            elif os.path.isdir(f_path) and not os.path.isfile(os.path.join(f_path, '.done')):
+
+                # create a hidden file to signal that the image-extraction for a movie is done
+                # write the current version of the script in the file
+                with open(done_file_path, 'a') as d:
+                    d.write(VERSION)
+                done += 1  # count the instances of the image-extraction done correctly
+                # do nothing if a .done-file exists and the versions in the file and the script match
+            elif os.path.isfile(done_file_path) and open(done_file_path, 'r').read() == VERSION:
+                done += 1  # count the instances of the image-extraction done correctly
+                print('image-extraction was already done for {}'.format(video_name))
+                # if the folder already exists but the .done-file doesn't, delete the folder
+            elif os.path.isfile(done_file_path) and not open(done_file_path, 'r').read() == VERSION:
                 shutil.rmtree(f_path)
-                print('shot-detection was not done correctly for {}'.format(os.path.split(v_path)[1]))
+                print('versions did not match for {}'.format(video_name))
+            elif not os.path.isfile(done_file_path):
+                shutil.rmtree(f_path)
+                print('image-extraction was not done correctly for {}'.format(video_name))

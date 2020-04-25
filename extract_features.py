@@ -3,14 +3,14 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 import glob
+import shutil
 from PIL import Image
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.applications.inception_resnet_v2 import preprocess_input
 from keras.models import Model
 
 
-#################################################################
-# uses a given model and an image(numpy array) and returns its features
+VERSION = '20200425'      # the version of the script
 
 
 def extract_features(model, frame):
@@ -22,9 +22,6 @@ def extract_features(model, frame):
     return features
 
 
-###################################################
-
-
 def load_model():
     print('load model')
     model = InceptionResNetV2(weights='imagenet', input_shape=(299, 299, 3))
@@ -33,65 +30,66 @@ def load_model():
     return model
 
 
-####################################################
-
-
-def main(features_path, file_extension):
+def extract_all_features_from_movie(f_path, file_extension, done, model):
+    video_name = os.path.split(f_path)[1]
     model_name = 'features_InceptionResNetV2_avgpoolLayer'
+    features_dir = os.path.join(f_path, model_name)
 
-    glob_path = '**/frames/*/*' + file_extension
-    images = os.path.join(features_path, glob_path)
-    list_images_path = glob.glob(images, recursive=True)  # get the list of videos in videos_dir
-    cp = os.path.commonprefix(list_images_path)  # get the common dir between paths found with glob
+    done_file_path = os.path.join(features_dir, '.done')
 
-    list_features_path = [os.path.split(  # split of the shots folder
-        os.path.split(
-            os.path.split(  # split of the image-file name
-                os.path.join(features_path, os.path.relpath(p, cp))
-            )[0])[0])[0]
-                          for p in list_images_path]
-    model = load_model()
+    if not os.path.isdir(features_dir):
+        print('extracting features for {}'.format(video_name))
+        os.makedirs(features_dir)
+        # get the paths to all frames for the video
+        frames_path = glob.glob(os.path.join(f_path, '**', '*' + file_extension), recursive=True)
+        for frame_p in tqdm(frames_path):
+            # open the image and extract the feature
+            frame = Image.open(frame_p)
+            frame = frame.convert('RGB')
+            frame = frame.resize((299, 299))  # resize the image to the size used by inception
+            feature = extract_features(model, frame)  # run the model on the frame
+
+            # create the folder for the shot, to create the same structure as in the frames folder
+            shot_folder_path = os.path.join(features_dir, os.path.split(os.path.split(frame_p)[0])[1])
+            if not os.path.isdir(shot_folder_path):
+                os.mkdir(shot_folder_path)
+
+            # get the name from the frame and save the feature with same name
+            np_feature_name = os.path.split(frame_p)[1][:-len(file_extension)]
+            feature_path = os.path.join(shot_folder_path, np_feature_name)
+            np.save(feature_path, feature)
+
+        # create a hidden file to signal that the image-extraction for a movie is done
+        # write the current version of the script in the file
+        with open(done_file_path, 'a') as d:
+            d.write(VERSION)
+        done += 1  # count the instances of the image-extraction done correctly
+    # do nothing if a .done-file exists and the versions in the file and the script match
+    elif os.path.isfile(done_file_path) and open(done_file_path, 'r').read() == VERSION:
+        done += 1  # count the instances of the image-extraction done correctly
+        print('image-extraction was already done for {}'.format(video_name))
+    # if the folder already exists but the .done-file doesn't, delete the folder
+    elif os.path.isfile(done_file_path) and not open(done_file_path, 'r').read() == VERSION:
+        shutil.rmtree(features_dir)
+        print('versions did not match for {}'.format(video_name))
+    elif not os.path.isfile(done_file_path):
+        shutil.rmtree(features_dir)
+        print('image-extraction was not done correctly for {}'.format(video_name))
+
+    return done
+
+
+def main(features_dir, file_extension):
+    # get the directories of all the movies by searching for the frames folder
+    features_dir = glob.glob(os.path.join(features_dir, '**/frames'), recursive=True)
+    # cut off the frames folder from every path
+    features_dir = [os.path.split(f)[0] for f in features_dir]
     done = 0
-    while done < len(list_features_path):  # repeat until all frames in the list have been processed correctly
-        if done != 0:
-            done = 0
+    model = load_model()
+    while done < len(features_dir):  # repeat until all movies in the list have been processed correctly
         print('-------------------------------------------------------')
-        for i_path, f_path in tqdm(zip(list_images_path, list_features_path), total=len(list_images_path)):
-            feature_name = os.path.split(i_path)[1][:-4]  # get the name of the image, remove the file extension
-
-            shot = os.path.split(os.path.split(i_path)[0])[1]  # get the name of the shot for the image
-            fp = os.path.join(f_path, model_name, shot)
-            path = os.path.join(fp, feature_name)  # specify the path to which the feature is saved, the name is the same as the image (w/o the file-extension)
-            path = path + '.npy'
-            done_name = '.done' + feature_name
-            done_path = os.path.join(fp, done_name)
-
-            if not os.path.isfile(path) and not os.path.isfile(done_path):  # if neither the feature nor a .done-file exist, start extracting the feature
-                if not os.path.isdir(fp):  # create the directory to save the features
-                    os.makedirs(fp)
-
-                frame = Image.open(i_path)
-                frame = frame.convert('RGB')
-
-                frame = frame.resize((299, 299))  # resize the image to the size used by inception
-
-                feature = extract_features(model, frame)  # run the model on the frame
-                np.save(path, feature)  # save the feature to disc
-                # create a hidden file to signal that the feature-extraction for a frame is done
-                open(done_path, 'a').close()
-                done += 1  # count the instances of the feature-extraction done correctly
-            elif os.path.isfile(path) and os.path.isfile(done_path):  # if both files exist, do nothing
-                done += 1  # count the instances of the feature-extraction done correctly
-            # if either the feature or the .done-file don't exist, something went wrong
-            # the other file is deleted, so the process can be finished in the second iteration
-            elif os.path.isfile(path) and not os.path.isfile(done_path):
-                os.remove(path)
-            elif not os.path.isfile(path) and os.path.isfile(done_path):
-                os.remove(done_path)
-        print('feature-extraction was already done for {}/{} features'.format(done, len(list_features_path)))
-
-
-#########################################################################################################
+        for f_d in features_dir:
+            done = extract_all_features_from_movie(f_d, file_extension, done, model)
 
 
 if __name__ == "__main__":

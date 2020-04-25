@@ -9,7 +9,7 @@ from scipy.spatial.distance import euclidean
 import xml.etree.ElementTree as ET
 
 FRAME_OFFSET_MS = 3*41  # frame offset in ms, one frame equals ~42ms, this jumps 3 frames ahead
-
+VERSION = '20200425'      # the version of the script
 
 def read_shotdetect_xml(path):
     tree = ET.parse(path)
@@ -24,14 +24,16 @@ def read_shotdetect_xml(path):
 
 
 def save_aspect_ratio_to_csv(f_path, file_extension, done):
+    video_name = os.path.split(os.path.split(f_path)[0])[1]
 
     shot_timestamps = read_shotdetect_xml(os.path.join(os.path.split(f_path)[0], 'shot_detection/result.xml'))
 
     # create the path for the .csv
     ar_dir_path = os.path.join(os.path.split(f_path)[0], 'aspect_ratio')
+    done_file_path = os.path.join(ar_dir_path, '.done')
 
-    if not os.path.isdir(ar_dir_path) and not os.path.isfile(os.path.join(ar_dir_path, '.done')):
-        print('save aspect ratios for {}'.format(os.path.split(os.path.split(f_path)[0])[1]))
+    if not os.path.isdir(ar_dir_path):
+        print('save aspect ratios for {}'.format(video_name))
         if not os.path.isdir(ar_dir_path):
             os.makedirs(ar_dir_path)
 
@@ -64,15 +66,25 @@ def save_aspect_ratio_to_csv(f_path, file_extension, done):
                     line = str(start_ms-FRAME_OFFSET_MS)+' '+str(end_ms+FRAME_OFFSET_MS)+' '+str(tu_ar_str[np.argmin(dist)])    # save the shots without the offset
                     f.write(line)
                     f.write('\n')
-        open(os.path.join(ar_dir_path, '.done'), 'a').close()
-        done += 1
-    elif os.path.isfile(os.path.join(ar_dir_path, '.done')):  # do nothing if a .done-file exists
+
+        # create a hidden file to signal that the image-extraction for a movie is done
+        # write the current version of the script in the file
+        with open(done_file_path, 'a') as d:
+            d.write(VERSION)
+            done += 1  # count the instances of the image-extraction done correctly
+            # do nothing if a .done-file exists and the versions in the file and the script match
+
+    elif os.path.isfile(done_file_path) and open(done_file_path, 'r').read() == VERSION:
         done += 1  # count the instances of the image-extraction done correctly
-        print('image-extraction was already done for {}'.format(os.path.split(os.path.split(f_path)[0])[1]))
+        print('image-extraction was already done for {}'.format(video_name))
     # if the folder already exists but the .done-file doesn't, delete the folder
-    elif os.path.isdir(os.path.join(ar_dir_path)) and not os.path.isfile(os.path.join(ar_dir_path, '.done')):
+    elif os.path.isfile(done_file_path) and not open(done_file_path, 'r').read() == VERSION:
         shutil.rmtree(ar_dir_path)
-        print('image-extraction was not done correctly for {}'.format(os.path.split(os.path.split(f_path)[0])[1]))
+        print('versions did not match for {}'.format(video_name))
+    elif not os.path.isfile(done_file_path):
+        shutil.rmtree(ar_dir_path)
+        print('image-extraction was not done correctly for {}'.format(video_name))
+
     return done
 
 

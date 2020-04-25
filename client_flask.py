@@ -16,10 +16,11 @@ import time
 UPLOAD_FOLDER = ''
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
+# default adress should be 'server_ndd'
 if 'IMAGESEARCH_HOST' in os.environ:
-   IMAGESEARCH_HOST = os.environ['IMAGESEARCH_HOST']
+    IMAGESEARCH_HOST = os.environ['IMAGESEARCH_HOST']
 else:
-   IMAGESEARCH_HOST = 'localhost'
+    IMAGESEARCH_HOST = 'server_ndd'
 
 
 def write_html_str(results, target_image):
@@ -66,6 +67,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = 'ndd'
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -87,6 +89,7 @@ def md5sum(filename):
         for buf in iter(partial(f.read, 128), b''):
             d.update(buf)
     return d.hexdigest()
+
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
