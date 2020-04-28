@@ -76,14 +76,14 @@ def save_aspect_ratio_to_csv(f_path, file_extension, done):
 
     elif os.path.isfile(done_file_path) and open(done_file_path, 'r').read() == VERSION:
         done += 1  # count the instances of the image-extraction done correctly
-        print('image-extraction was already done for {}'.format(video_name))
+        print('aspect-ratio-extraction was already done for {}'.format(video_name))
     # if the folder already exists but the .done-file doesn't, delete the folder
     elif os.path.isfile(done_file_path) and not open(done_file_path, 'r').read() == VERSION:
         shutil.rmtree(ar_dir_path)
         print('versions did not match for {}'.format(video_name))
     elif not os.path.isfile(done_file_path):
         shutil.rmtree(ar_dir_path)
-        print('image-extraction was not done correctly for {}'.format(video_name))
+        print('aspect-ratio-extraction was not done correctly for {}'.format(video_name))
 
     return done
 

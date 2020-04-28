@@ -67,14 +67,14 @@ def extract_all_features_from_movie(f_path, file_extension, done, model):
     # do nothing if a .done-file exists and the versions in the file and the script match
     elif os.path.isfile(done_file_path) and open(done_file_path, 'r').read() == VERSION:
         done += 1  # count the instances of the image-extraction done correctly
-        print('image-extraction was already done for {}'.format(video_name))
+        print('feature-extraction was already done for {}'.format(video_name))
     # if the folder already exists but the .done-file doesn't, delete the folder
     elif os.path.isfile(done_file_path) and not open(done_file_path, 'r').read() == VERSION:
         shutil.rmtree(features_dir)
         print('versions did not match for {}'.format(video_name))
     elif not os.path.isfile(done_file_path):
         shutil.rmtree(features_dir)
-        print('image-extraction was not done correctly for {}'.format(video_name))
+        print('feature-extraction was not done correctly for {}'.format(video_name))
 
     return done
 
