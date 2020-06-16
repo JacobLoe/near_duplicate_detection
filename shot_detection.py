@@ -45,14 +45,14 @@ if __name__ == "__main__":
                 with open(log_file, 'w') as f:
                     f.write(str(p.stderr))
 
-                # create a hidden file to signal that the image-extraction for a movie is done
+                # create a hidden file to signal that the shot-detection-extraction for a movie is done
                 # write the current version of the script in the file
                 with open(done_file_path, 'a') as d:
                     d.write(VERSION)
-                done += 1  # count the instances of the image-extraction done correctly
+                done += 1  # count the instances of the shot-detection-extraction done correctly
                 # do nothing if a .done-file exists and the versions in the file and the script match
             elif os.path.isfile(done_file_path) and open(done_file_path, 'r').read() == VERSION:
-                done += 1  # count the instances of the image-extraction done correctly
+                done += 1  # count the instances of the shot-detection-extraction done correctly
                 print('shot-detection was already done for {}'.format(video_name))
                 # if the folder already exists but the .done-file doesn't, delete the folder
             elif os.path.isfile(done_file_path) and not open(done_file_path, 'r').read() == VERSION:
