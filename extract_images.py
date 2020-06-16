@@ -176,7 +176,7 @@ def extract_images(v_path, f_path, file_extension, done, max_bbox_pro_shot, boun
             with open(done_file_path, 'a') as d:
                 d.write(VERSION)
             done += 1  # count the instances of the image-extraction done correctly
-            # do nothing if a .done-file exists and the versions in the file and the script match
+        # do nothing if a .done-file exists and the versions in the file and the script match
         elif os.path.isfile(done_file_path) and open(done_file_path, 'r').read() == VERSION:
             done += 1  # count the instances of the image-extraction done correctly
             print('image-extraction was already done for {}'.format(video_name))
@@ -232,12 +232,17 @@ def main(videos_path, features_path, file_extension, trim_frames, frame_width):
 
     list_videos_path = glob.glob(os.path.join(videos_path, '**/*.mp4'), recursive=True)  # get the list of videos in videos_dir
 
-    cp = os.path.commonprefix(list_videos_path)  # get the common dir between paths found with glob
+    if len(list_videos_path) > 1:
+        cp = os.path.commonprefix(list_videos_path)  # get the common dir between paths found with glob
+        list_features_path = [os.path.join(
+                             os.path.join(features_path,
+                             os.path.relpath(p, cp))[:-4])  # add a new dir 'VIDEO_FILE_NAME/shot_detection' to the path
+                             for p in list_videos_path]  # create a list of paths where all the data (shot-detection,frames,features) are saved to
 
-    list_features_path = [os.path.join(
-                         os.path.join(features_path,
-                         os.path.relpath(p, cp))[:-4])  # add a new dir 'VIDEO_FILE_NAME/shot_detection' to the path
-                         for p in list_videos_path]  # create a list of paths where all the data (shot-detection,frames,features) are saved to
+    else:
+        # get the directory for the movie in the videos_dir
+        r = os.path.relpath(list_videos_path[0], args.videos_dir)[:-4]
+        list_features_path = [os.path.join(args.features_dir, r)]
 
     max_bbox_pro_shot = {}
     bounding_box_template = {}
@@ -251,7 +256,8 @@ def main(videos_path, features_path, file_extension, trim_frames, frame_width):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("videos_dir", help="the directory where the video-files are stored")
+    parser.add_argument("videos_dir", help="the directory where the video-files are stored,"
+                                           "the names of sub-directories need to start with different letters")
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
     parser.add_argument("--trim_frames", default='no', choices=('yes', 'no'), help="decide whether to remove or keep black borders in the movies")
     parser.add_argument("--frame_width", type=int, help="set the width at which the frames are saved")

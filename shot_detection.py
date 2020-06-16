@@ -8,19 +8,24 @@ VERSION = '20200425'      # the version of the script
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("videos_dir", help="the directory where the video-files are stored")
+    parser.add_argument("videos_dir", help="the directory where the video-files are stored,"
+                                           "the names of sub-directories need to start with different letters")
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
     args = parser.parse_args()
 
+    # any subdirectories in
     list_videos_path = glob.glob(os.path.join(args.videos_dir, '**/*.mp4'), recursive=True)  # get the list of videos in videos_dir
+    if len(list_videos_path) > 1:
+        cp = os.path.commonprefix(list_videos_path)  # get the common dir between paths found with glob
+        list_features_path = [os.path.join(
+                              os.path.join(args.features_dir,
+                              os.path.relpath(p, cp))[:-4], 'shot_detection')  # add a new dir 'VIDEO_FILE_NAME/shot_detection' to the path
+                              for p in list_videos_path]  # create a list of paths where all the data (shot-detection,frames,features) are saved to
 
-    cp = os.path.commonprefix(list_videos_path)  # get the common dir between paths found with glob
-
-    list_features_path = [os.path.join(
-                          os.path.join(args.features_dir,
-                          os.path.relpath(p, cp))[:-4], 'shot_detection')  # add a new dir 'VIDEO_FILE_NAME/shot_detection' to the path
-                          for p in list_videos_path]  # create a list of paths where all the data (shot-detection,frames,features) are saved to
-
+    else:
+        # get the directory for the movie in the videos_dir
+        r = os.path.relpath(list_videos_path[0], args.videos_dir)[:-4]
+        list_features_path = [os.path.join(args.features_dir, r, 'shot_detection')]
     done = 0
     while done < len(list_features_path):  # repeat until all movies in the list have been processed correctly
         print('-------------------------------------------------------')
