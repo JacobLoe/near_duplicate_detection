@@ -1,68 +1,66 @@
 import subprocess
 import argparse
 import os
-import glob
-import shutil
+from idmapper import TSVIdMapper
+from tqdm import tqdm
 
-VERSION = '20200425'      # the version of the script
+VERSION = '20200816'      # the version of the script
+EXTRACTOR = 'shotdetection'
+
+
+def shot_detect(v_path, f_path):
+    keywords = ['-i', v_path,
+                '-o', f_path,
+                '-s', '60']
+    process = ['shotdetect'] + keywords
+    p = subprocess.run(process, bufsize=0,
+                       shell=False,
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE)
+
+    log_file = os.path.join(f_path, 'log.txt')
+    with open(log_file, 'w') as f:
+        f.write(str(p.stderr))
+
+
+def main(videos_root, features_root, videoids, idmapper):
+    # repeat until all movies are transcribed correctly
+    for videoid in tqdm(videoids):
+        try:
+            video_rel_path = idmapper.get_filename(videoid)
+        except KeyError as err:
+            print("No such videoid: '{videoid}'".format(videoid=videoid))
+
+        video_name = os.path.basename(video_rel_path)[:-4]
+        features_dir = os.path.join(features_root, videoid, EXTRACTOR)
+        if not os.path.isdir(features_dir):
+            os.makedirs(features_dir)
+
+        done_file_path = os.path.join(features_dir, '.done')
+
+        v_path = os.path.join(videos_root, video_rel_path)
+        if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == VERSION:
+            print('automatic speech recognition results missing or version did not match, generating transcript for {video_name}'.format(video_name=video_name))
+
+            shot_detect(v_path, features_dir)
+
+            # create a hidden file to signal that the asr for a movie is done
+            # write the current version of the script in the file
+            with open(done_file_path, 'w') as d:
+                d.write(VERSION)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("videos_dir", help="the directory where the video-files are stored,"
                                            "the names of sub-directories need to start with different letters")
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
+    parser.add_argument('file_mappings', help='path to file mappings .tsv-file')
+    parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
     args = parser.parse_args()
 
-    # any subdirectories in
-    list_videos_path = glob.glob(os.path.join(args.videos_dir, '**/*.mp4'), recursive=True)  # get the list of videos in videos_dir
-    if len(list_videos_path) > 1:
-        cp = os.path.commonprefix(list_videos_path)  # get the common dir between paths found with glob
-        list_features_path = [os.path.join(
-                              os.path.join(args.features_dir,
-                              os.path.relpath(p, cp))[:-4], 'shot_detection')  # add a new dir 'VIDEO_FILE_NAME/shot_detection' to the path
-                              for p in list_videos_path]  # create a list of paths where all the data (shot-detection,frames,features) are saved to
+    idmapper = TSVIdMapper(args.file_mappings)
+    videoids = args.videoids if len(args.videoids) > 0 else idmapper.get_ids()
 
-    else:
-        # get the directory for the movie in the videos_dir
-        r = os.path.relpath(list_videos_path[0], args.videos_dir)[:-4]
-        list_features_path = [os.path.join(args.features_dir, r, 'shot_detection')]
-    done = 0
-    while done < len(list_features_path):  # repeat until all movies in the list have been processed correctly
-        print('-------------------------------------------------------')
-        for v_path, f_path in zip(list_videos_path, list_features_path):
-            video_name = os.path.split(v_path)[1]
-            done_file_path = os.path.join(f_path, '.done')
-            # create a folder for the shot-detection results
-            if not os.path.isdir(f_path):
-                os.makedirs(f_path)
-                print('start shotdetection for {}'.format(video_name))
+    main(args.videos_dir, args.features_dir, videoids, idmapper)
 
-                keywords = ['-i', v_path,
-                            '-o', f_path,
-                            '-s', '60']
-                process = ['shotdetect']+keywords
-                p = subprocess.run(process, bufsize=0,
-                                   shell=False,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-
-                log_file = os.path.join(f_path, 'log.txt')
-                with open(log_file, 'w') as f:
-                    f.write(str(p.stderr))
-
-                # create a hidden file to signal that the shot-detection-extraction for a movie is done
-                # write the current version of the script in the file
-                with open(done_file_path, 'a') as d:
-                    d.write(VERSION)
-                done += 1  # count the instances of the shot-detection-extraction done correctly
-                # do nothing if a .done-file exists and the versions in the file and the script match
-            elif os.path.isfile(done_file_path) and open(done_file_path, 'r').read() == VERSION:
-                done += 1  # count the instances of the shot-detection-extraction done correctly
-                print('shot-detection was already done for {}'.format(video_name))
-                # if the folder already exists but the .done-file doesn't, delete the folder
-            elif os.path.isfile(done_file_path) and not open(done_file_path, 'r').read() == VERSION:
-                shutil.rmtree(f_path)
-                print('versions did not match for {}'.format(video_name))
-            elif not os.path.isfile(done_file_path):
-                shutil.rmtree(f_path)
-                print('shot-detection was not done correctly for {}'.format(video_name))
