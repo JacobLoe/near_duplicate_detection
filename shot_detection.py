@@ -40,7 +40,7 @@ def main(videos_root, features_root, videoids, idmapper):
 
         v_path = os.path.join(videos_root, video_rel_path)
         if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == VERSION:
-            print('automatic speech recognition results missing or version did not match, generating transcript for {video_name}'.format(video_name=video_name))
+            print('shot detection results missing or version did not match, generating transcript for {video_name}'.format(video_name=video_name))
 
             shot_detect(v_path, features_dir)
 
