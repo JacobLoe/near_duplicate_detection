@@ -1,7 +1,7 @@
-#docker run --rm -it -v $(pwd)/../videos:/video:ro -v $(pwd)/static/features_videos:/data jacobloe/extract_images:0.1 /video /data/
+# docker run --rm -it -v $(pwd)/../videos:/video:ro -v $(pwd)/static/features_videos:/data jacobloe/extract_images:0.1 /video /data/ file_mappings.tsv
 
 # opencv needs the python-stretch version
-FROM python:3.6.8-stretch 
+FROM python:3.6.8-stretch
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -13,7 +13,7 @@ RUN apt update && apt install -y ffmpeg
 COPY extract_images.py /root
 COPY crop_image.py /root
 COPY video_aspect_ratio.py /root
-COPY file_mappings.tsv
+COPY idmapper.py /root
 
 VOLUME "/video"
 VOLUME "/data"

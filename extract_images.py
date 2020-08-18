@@ -13,7 +13,7 @@ from idmapper import TSVIdMapper
 FRAME_OFFSET_MS = 3*41  # frame offset in ms, one frame equals ~41ms, this jumps 3 frames ahead
 TRIM_THRESHOLD = 12     # the threshold for the trim function, pixels with values lower are considered black and croppped
 IMAGE_QUALITY = 90      # the quality to save images in, higher values mean less compression
-VERSION = '20200816'      # the version of the script
+VERSION = '20200818'      # the version of the script
 EXTRACTOR = 'frames'
 
 
@@ -156,7 +156,6 @@ def main(videos_root, features_root, file_extension, trim_frames, frame_width, v
                                                                           frame_width,
                                                                           file_extension)
                 max_bbox_pro_shot[video_name] = aux_bbox_dict
-
                 # get the lower and upper bounds of all the bounding boxes in a movie
                 aux = [x for x in aux_bbox_dict.values()]
                 lower_bounds = np.amin(aux, axis=0)

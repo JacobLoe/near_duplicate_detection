@@ -12,7 +12,6 @@ RUN pip3 install tqdm
 
 COPY shot_detection.py /root
 COPY idmapper.py /root
-COPY file_mappings.tsv /root
 
 VOLUME "/video"
 VOLUME "/data"
