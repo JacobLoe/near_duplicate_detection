@@ -13,6 +13,7 @@ RUN apt update && apt install -y ffmpeg
 COPY extract_images.py /root
 COPY crop_image.py /root
 COPY video_aspect_ratio.py /root
+COPY file_mappings.tsv
 
 VOLUME "/video"
 VOLUME "/data"
