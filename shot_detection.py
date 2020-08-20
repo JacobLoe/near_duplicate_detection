@@ -3,8 +3,9 @@ import argparse
 import os
 from idmapper import TSVIdMapper
 from tqdm import tqdm
+import shutil
 
-VERSION = '20200816'      # the version of the script
+VERSION = '20200820'      # the version of the script
 EXTRACTOR = 'shotdetection'
 
 
@@ -41,6 +42,13 @@ def main(videos_root, features_root, videoids, idmapper):
         v_path = os.path.join(videos_root, video_rel_path)
         if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == VERSION:
             print('shot detection results missing or version did not match, detecting shots for {video_name}'.format(video_name=video_name))
+
+            # create the folder for the shot-detection, delete the old folder to prevent issues with older versions
+            if not os.path.isdir(features_dir):
+                os.makedirs(features_dir)
+            else:
+                shutil.rmtree()
+                os.makedirs(features_dir)
 
             shot_detect(v_path, features_dir)
 
