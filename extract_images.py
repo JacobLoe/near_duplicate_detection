@@ -143,7 +143,7 @@ def main(videos_root, features_root, file_extension, trim_frames, frame_width, v
             if not os.path.isdir(features_dir):
                 os.makedirs(features_dir)
             else:
-                shutil.rmtree()
+                shutil.rmtree(features_dir)
                 os.makedirs(features_dir)
 
             if trim_frames == 'yes':

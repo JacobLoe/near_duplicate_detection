@@ -47,7 +47,7 @@ def main(videos_root, features_root, videoids, idmapper):
             if not os.path.isdir(features_dir):
                 os.makedirs(features_dir)
             else:
-                shutil.rmtree()
+                shutil.rmtree(features_dir)
                 os.makedirs(features_dir)
 
             shot_detect(v_path, features_dir)
