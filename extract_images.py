@@ -8,12 +8,12 @@ from crop_image import trim
 from PIL import Image
 from video_aspect_ratio import get_aspect_ratios
 from idmapper import TSVIdMapper
-
+import shutil
 
 FRAME_OFFSET_MS = 3*41  # frame offset in ms, one frame equals ~41ms, this jumps 3 frames ahead
 TRIM_THRESHOLD = 12     # the threshold for the trim function, pixels with values lower are considered black and croppped
 IMAGE_QUALITY = 90      # the quality to save images in, higher values mean less compression
-VERSION = '20200818'      # the version of the script
+VERSION = '20200820'      # the version of the script
 EXTRACTOR = 'frames'
 
 
@@ -130,8 +130,6 @@ def main(videos_root, features_root, file_extension, trim_frames, frame_width, v
 
         video_name = os.path.basename(video_rel_path)[:-4]
         features_dir = os.path.join(features_root, videoid, EXTRACTOR)
-        if not os.path.isdir(features_dir):
-            os.makedirs(features_dir)
 
         done_file_path = os.path.join(features_dir, '.done')
 
@@ -140,6 +138,13 @@ def main(videos_root, features_root, file_extension, trim_frames, frame_width, v
         shot_timestamps = read_shotdetect_xml(os.path.join(features_root, videoid, 'shotdetection/result.xml'))
         if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == VERSION:
             print('image extraction results missing or version did not match, extracting images for {video_name}'.format(video_name=video_name))
+
+            # create the folder for the frames, delete the old folder to prevent issues with older versions
+            if not os.path.isdir(features_dir):
+                os.makedirs(features_dir)
+            else:
+                shutil.rmtree()
+                os.makedirs(features_dir)
 
             if trim_frames == 'yes':
 
