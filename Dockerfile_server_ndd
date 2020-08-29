@@ -1,4 +1,4 @@
-#docker run --rm -it -v $(pwd)/static/features_videos/:/root/static -v /home/.keras/:/root/.keras -v $(pwd)/features_pickle/:/root/features_pickle/ -p 9000:9000 --network ndd_subnet --name server_ndd jacobloe/server_ndd:0.1 --num_cores 8 --features_dtype float16
+# docker run --rm -it -v $(pwd)/../videos:/video:ro -v $(pwd)/static/features_videos/:/root/static -v /home/.keras/:/root/.keras -v $(pwd)/features_pickle/:/root/features_pickle/ -p 9000:9000 --network ndd_subnet --name server_ndd jacobloe/server_ndd:0.1 /video/file_mappings.tsv
 
 FROM python:3.6.8-stretch
 
@@ -11,6 +11,7 @@ RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_server_ndd
 COPY server_ndd.py /root
 COPY extract_features.py /root
 COPY crop_image.py /root
+COPY idmapper.py /root
 
 EXPOSE 9000
 

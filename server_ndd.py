@@ -7,10 +7,7 @@ from functools import partial
 
 from extract_features import extract_features, load_model
 from crop_image import trim
-
-from sklearn.metrics.pairwise import euclidean_distances
-import multiprocessing as mp
-import functools
+from idmapper import TSVIdMapper
 
 import os
 import glob
@@ -35,10 +32,12 @@ logger.propagate = False    # prevent log messages from appearing twice
 
 parser = argparse.ArgumentParser()
 # FIXME: this should be derived from the existing files matching the features found in rder to avoid problems:
-parser.add_argument("--file_extension", default='.jpg', choices=('.jpg', '.png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpg")
+parser.add_argument('file_mappings', help='path to file mappings .tsv-file')
+parser.add_argument("--file_extension", default='.jpeg', choices=('.jpeg', '.png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpg")
 args = parser.parse_args()
 
 inception_model = load_model()
+idmapper = TSVIdMapper(args.file_mappings)
 
 
 def get_features(features_path):
@@ -53,21 +52,23 @@ def get_features(features_path):
 
     feature_list = []
     for feature in tqdm(list_features_path, total=len(list_features_path)):
-        fv = np.load(feature)
-        feature_list.append(fv[0])  # create a list of features for the distance calculation
+        feature_list.append(np.load(feature)[0])  # create a list of features for the distance calculation
 
-        i_ft = os.path.split(feature)  # the timestamp in ms of the feature
-        i_sbf = os.path.split(i_ft[0])  # the timestamp in ms at which the shot starts where the feature is found
-        i_sv = os.path.split(os.path.split(i_sbf[0])[0])  # the name of the videofile of the feature
+        i_feature = os.path.split(feature)  # get the name and folder of the current feature
+        i_segment = os.path.split(i_feature[0])  # get the name and folder of the current segment
+        i_movie = os.path.split(os.path.split(i_segment[0])[0])   # get the id and the folder of the movie
 
         # recreate the path to the image from the path to the feature
-        i_fp = os.path.join(i_sv[0], i_sv[1], 'frames', i_sbf[1], i_ft[1][:-4]+args.file_extension)  # the path to image corresponding to the feature
+        i_frame_path = os.path.join(i_movie[0], i_movie[1], 'frames', i_segment[1], i_feature[1][:-4]+args.file_extension)  # the path to the image corresponding to the feature
 
         # add information for the frame
-        source_video.append(i_sv[1])  # save the name of the source video
-        shot_begin_frame.append(i_sbf[1])  # save the beginning timestamp of the shot the feature is from
-        frame_timestamp.append(i_ft[1][:-4])  # save the specific timestamp the feature is at
-        frame_path.append(i_fp)  # save the path of the feature
+        video_rel_path = idmapper.get_filename(i_movie[1])
+        video_name = os.path.basename(video_rel_path)[:-4]
+
+        source_video.append(video_name)  # save the name of the source video
+        shot_begin_frame.append(i_segment[1])  # save the beginning timestamp of the shot the feature is from
+        frame_timestamp.append(i_feature[1][:-4])  # save the specific timestamp the feature is at
+        frame_path.append(i_frame_path)  # save the path of the feature
 
     features = np.asarray(feature_list)
     info = {'source_video': source_video, 'shot_begin_frame': shot_begin_frame, 'frame_timestamp': frame_timestamp, 'frame_path': frame_path}
@@ -194,24 +195,24 @@ if __name__ == '__main__':
     else:
         features_server, info_server = get_features('static')
         logger.info('save features with pickle')
+        if not os.path.isdir('features_pickle'):
+            os.makedirs('features_pickle')
         with open(pickle_features, 'wb') as handle:
             pickle.dump([features_server, info_server], handle)
         logger.info('done')
-
 
     HOST_NAME = ''
     PORT_NUMBER = 9000
     
     archive_features_norm_sq = (features_server**2).sum(axis=1).reshape(-1,1)
 
-
     handler = partial(RESTHandler, features_server, archive_features_norm_sq)
     server_class = http.server.HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), handler)
     logger.info("Starting dummy REST server on %s:%d", HOST_NAME, PORT_NUMBER)
     try:
-        print('server ready')
+        logger.info('server ready')
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print('setting up server failed failed')
+        logger.info('setting up server failed failed')
         pass

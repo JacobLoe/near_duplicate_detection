@@ -1,4 +1,4 @@
-#docker run --rm -it -v $(pwd)/static/features_videos/:/root/static -p 8000:80 --network ndd_subnet --name client_flask jacobloe/client_flask:0.1
+# docker run --rm -it -v $(pwd)/static/features_videos/:/root/static -p 8000:80 --network ndd_subnet --name client_flask jacobloe/client_flask:0.1
 
 FROM python:3.6.8-stretch
 

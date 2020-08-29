@@ -1,4 +1,4 @@
 Flask==1.0.2
-pillow
-argparse
-requests
+pillow==6.2.1
+argparse==1.4.0
+requests==2.24.0

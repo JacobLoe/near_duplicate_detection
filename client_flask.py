@@ -1,5 +1,5 @@
 import os
-from flask import Flask, flash, request, redirect, url_for
+from flask import Flask, flash, request, redirect
 from flask import send_from_directory
 from werkzeug.utils import secure_filename
 
@@ -14,7 +14,7 @@ import time
 ##########################################################################
 
 UPLOAD_FOLDER = ''
-ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
+ALLOWED_EXTENSIONS = set(['png', 'jpeg'])
 
 # default adress should be 'server_ndd'
 if 'IMAGESEARCH_HOST' in os.environ:
