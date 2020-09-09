@@ -65,7 +65,7 @@ if __name__ == "__main__":
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
     parser.add_argument('file_mappings', help='path to file mappings .tsv-file')
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
-    parser.add_argument('--sensitivity', type=int, default=60, help='')
+    parser.add_argument('--sensitivity', default=60, help='sets the sensitivity of the shot_detection, expects an integer ,default value is 60')
     args = parser.parse_args()
 
     idmapper = TSVIdMapper(args.file_mappings)
