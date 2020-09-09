@@ -19,7 +19,7 @@ docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_F
 
 # parameters:
 # --file_extension choices: .jpeg/.png default: .jpeg     use the extension in which the frames were saved
-docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_FEATURES:/data -v /home/.keras/:/root/.keras jacobloe/extract_aspect_ratio:0.1 /data/ /video/file_mappings.tsv
+docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_FEATURES:/data jacobloe/extract_aspect_ratio:0.1 /data/ /video/file_mappings.tsv
 
 # parameters:
 # --file_extension choices: .jpeg/.png default: .jpeg     use the extension in which the frames were saved

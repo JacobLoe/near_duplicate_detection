@@ -10,7 +10,7 @@ from keras.models import Model
 from idmapper import TSVIdMapper
 import shutil
 
-VERSION = '20200820'      # the version of the script
+VERSION = '20200909'      # the version of the script
 EXTRACTOR = 'features'
 
 
@@ -94,6 +94,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     idmapper = TSVIdMapper(args.file_mappings)
-    videoids = args.videoids if len(args.videoids) > 0 else idmapper.get_ids()
+    videoids = args.videoids if len(args.videoids) > 0 else parser.error('no videoids found')
 
     main(args.features_dir, args.file_extension, videoids, idmapper)

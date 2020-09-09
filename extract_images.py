@@ -13,7 +13,7 @@ import shutil
 FRAME_OFFSET_MS = 3*41  # frame offset in ms, one frame equals ~41ms, this jumps 3 frames ahead
 TRIM_THRESHOLD = 12     # the threshold for the trim function, pixels with values lower are considered black and croppped
 IMAGE_QUALITY = 90      # the quality to save images in, higher values mean less compression
-VERSION = '20200820'      # the version of the script
+VERSION = '20200909'      # the version of the script
 EXTRACTOR = 'frames'
 
 
@@ -145,61 +145,61 @@ def main(videos_root, features_root, file_extension, trim_frames, frame_width, v
             else:
                 shutil.rmtree(features_dir)
                 os.makedirs(features_dir)
-
-            if trim_frames == 'yes':
-
-                print('extracting movie resolution for {}'.format(video_name))
-                aux_bbox_dict = {}  # save the max resolution of each shot of a movie in a dict, keys are the start_frame of the shot
-                for start_ms, end_ms in tqdm(shot_timestamps):
-                    # apply the offset to the timestamps
-                    start_ms = start_ms + FRAME_OFFSET_MS
-                    end_ms = end_ms - FRAME_OFFSET_MS
-                    frames_path = os.path.join(features_dir, str(start_ms))
-                    aux_bbox_dict[start_ms] = get_trimmed_shot_resolution(v_path,
-                                                                          frames_path,
-                                                                          start_ms, end_ms,
-                                                                          frame_width,
-                                                                          file_extension)
-                max_bbox_pro_shot[video_name] = aux_bbox_dict
-                # get the lower and upper bounds of all the bounding boxes in a movie
-                aux = [x for x in aux_bbox_dict.values()]
-                lower_bounds = np.amin(aux, axis=0)
-                upper_bounds = np.amax(aux, axis=0)
-                bounding_box_template[video_name] = np.concatenate((lower_bounds[:2], upper_bounds[2:]))
-
-                print('starting image extraction')
-                for start_ms, end_ms in tqdm(shot_timestamps):
-
-                    # apply the offset to the timestamps
-                    start_ms = start_ms + FRAME_OFFSET_MS
-                    end_ms = end_ms - FRAME_OFFSET_MS
-
-                    # create a dir for a specific shot, the name are the boundaries in ms
-                    frames_path = os.path.join(features_dir, str(start_ms))
-
-                    # compare the resolution, after trimming of the shot, with the maximum resolution in the movie
-                    # and choose the larger resolution
-                    if (max_bbox_pro_shot[video_name][start_ms][2] - max_bbox_pro_shot[video_name][start_ms][0]) == 0:
-                        max_bbox_pro_shot[video_name][start_ms] = bounding_box_template[video_name]
-
-                    crop_saved_frames(frames_path,
-                                      start_ms, end_ms,
-                                      max_bbox_pro_shot[video_name][start_ms],
-                                      file_extension)
-            else:
-                for start_ms, end_ms in tqdm(shot_timestamps):
-                    # apply the offset to the timestamps
-                    start_ms = start_ms + FRAME_OFFSET_MS
-                    end_ms = end_ms - FRAME_OFFSET_MS
-
-                    # create a dir for a specific shot, the name are the boundaries in ms
-                    frames_path = os.path.join(features_dir, str(start_ms))
-
-                    save_shot_frames(v_path,
-                                     frames_path,
-                                     start_ms, end_ms,
-                                     frame_width,
-                                     file_extension)
+            #
+            # if trim_frames == 'yes':
+            #
+            #     print('extracting movie resolution for {}'.format(video_name))
+            #     aux_bbox_dict = {}  # save the max resolution of each shot of a movie in a dict, keys are the start_frame of the shot
+            #     for start_ms, end_ms in tqdm(shot_timestamps):
+            #         # apply the offset to the timestamps
+            #         start_ms = start_ms + FRAME_OFFSET_MS
+            #         end_ms = end_ms - FRAME_OFFSET_MS
+            #         frames_path = os.path.join(features_dir, str(start_ms))
+            #         aux_bbox_dict[start_ms] = get_trimmed_shot_resolution(v_path,
+            #                                                               frames_path,
+            #                                                               start_ms, end_ms,
+            #                                                               frame_width,
+            #                                                               file_extension)
+            #     max_bbox_pro_shot[video_name] = aux_bbox_dict
+            #     # get the lower and upper bounds of all the bounding boxes in a movie
+            #     aux = [x for x in aux_bbox_dict.values()]
+            #     lower_bounds = np.amin(aux, axis=0)
+            #     upper_bounds = np.amax(aux, axis=0)
+            #     bounding_box_template[video_name] = np.concatenate((lower_bounds[:2], upper_bounds[2:]))
+            #
+            #     print('starting image extraction')
+            #     for start_ms, end_ms in tqdm(shot_timestamps):
+            #
+            #         # apply the offset to the timestamps
+            #         start_ms = start_ms + FRAME_OFFSET_MS
+            #         end_ms = end_ms - FRAME_OFFSET_MS
+            #
+            #         # create a dir for a specific shot, the name are the boundaries in ms
+            #         frames_path = os.path.join(features_dir, str(start_ms))
+            #
+            #         # compare the resolution, after trimming of the shot, with the maximum resolution in the movie
+            #         # and choose the larger resolution
+            #         if (max_bbox_pro_shot[video_name][start_ms][2] - max_bbox_pro_shot[video_name][start_ms][0]) == 0:
+            #             max_bbox_pro_shot[video_name][start_ms] = bounding_box_template[video_name]
+            #
+            #         crop_saved_frames(frames_path,
+            #                           start_ms, end_ms,
+            #                           max_bbox_pro_shot[video_name][start_ms],
+            #                           file_extension)
+            # else:
+            #     for start_ms, end_ms in tqdm(shot_timestamps):
+            #         # apply the offset to the timestamps
+            #         start_ms = start_ms + FRAME_OFFSET_MS
+            #         end_ms = end_ms - FRAME_OFFSET_MS
+            #
+            #         # create a dir for a specific shot, the name are the boundaries in ms
+            #         frames_path = os.path.join(features_dir, str(start_ms))
+            #
+            #         save_shot_frames(v_path,
+            #                          frames_path,
+            #                          start_ms, end_ms,
+            #                          frame_width,
+            #                          file_extension)
 
             # create a hidden file to signal that the image extraction for a movie is done
             # write the current version of the script in the file
@@ -221,6 +221,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     idmapper = TSVIdMapper(args.file_mappings)
-    videoids = args.videoids if len(args.videoids) > 0 else idmapper.get_ids()
+    videoids = args.videoids if len(args.videoids) > 0 else parser.error('no videoids found')
 
     main(args.videos_dir, args.features_dir, args.file_extension, args.trim_frames, args.frame_width, videoids, idmapper)

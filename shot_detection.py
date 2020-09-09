@@ -5,14 +5,14 @@ from idmapper import TSVIdMapper
 from tqdm import tqdm
 import shutil
 
-VERSION = '20200820'      # the version of the script
+VERSION = '20200909'      # the version of the script
 EXTRACTOR = 'shotdetection'
 
 
-def shot_detect(v_path, f_path):
+def shot_detect(v_path, f_path, sensitivity):
     keywords = ['-i', v_path,
                 '-o', f_path,
-                '-s', '60']
+                '-s', sensitivity]
     process = ['shotdetect'] + keywords
     p = subprocess.run(process, bufsize=0,
                        shell=False,
@@ -24,7 +24,7 @@ def shot_detect(v_path, f_path):
         f.write(str(p.stderr))
 
 
-def main(videos_root, features_root, videoids, idmapper):
+def main(videos_root, features_root, sensitivity, videoids, idmapper):
     # repeat until all movies are processed correctly
     for videoid in tqdm(videoids):
         try:
@@ -50,7 +50,7 @@ def main(videos_root, features_root, videoids, idmapper):
                 shutil.rmtree(features_dir)
                 os.makedirs(features_dir)
 
-            shot_detect(v_path, features_dir)
+            shot_detect(v_path, features_dir, sensitivity)
 
             # create a hidden file to signal that the asr for a movie is done
             # write the current version of the script in the file
@@ -65,10 +65,11 @@ if __name__ == "__main__":
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
     parser.add_argument('file_mappings', help='path to file mappings .tsv-file')
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
+    parser.add_argument('--sensitivity', type=int, default=60, help='')
     args = parser.parse_args()
 
     idmapper = TSVIdMapper(args.file_mappings)
-    videoids = args.videoids if len(args.videoids) > 0 else idmapper.get_ids()
+    videoids = args.videoids if len(args.videoids) > 0 else parser.error('no videoids found')
 
-    main(args.videos_dir, args.features_dir, videoids, idmapper)
+    main(args.videos_dir, args.features_dir, args.sensitivity, videoids, idmapper)
 

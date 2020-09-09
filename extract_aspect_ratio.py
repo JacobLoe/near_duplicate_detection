@@ -9,7 +9,7 @@ from idmapper import TSVIdMapper
 import shutil
 
 FRAME_OFFSET_MS = 3*41  # frame offset in ms, one frame equals ~42ms, this jumps 3 frames ahead
-VERSION = '20200825'      # the version of the script
+VERSION = '20200909'      # the version of the script
 EXTRACTOR = 'aspectratio'
 
 
@@ -62,7 +62,7 @@ def save_aspect_ratio_to_csv(ar_dir_path, file_extension, videoname):
                 f.write('\n')
 
 
-def main(features_root, file_extension, idmapper, videoids):
+def main(features_root, file_extension, videoids, idmapper):
     # repeat until all movies are processed correctly
     for videoid in tqdm(videoids):
         try:
@@ -103,6 +103,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     idmapper = TSVIdMapper(args.file_mappings)
-    videoids = args.videoids if len(args.videoids) > 0 else idmapper.get_ids()
+    videoids = args.videoids if len(args.videoids) > 0 else parser.error('no videoids found')
 
-    main(args.features_dir, args.file_extension, idmapper, videoids)
+    main(args.features_dir, args.file_extension, videoids, idmapper)
