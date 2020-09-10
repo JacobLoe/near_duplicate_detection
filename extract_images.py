@@ -138,7 +138,7 @@ def main(videos_root, features_root, file_extension, trim_frames, frame_width, v
         shot_timestamps = read_shotdetect_xml(os.path.join(features_root, videoid, 'shotdetection/result.xml'))
 
         # create the version for a run, based on the script version and the used parameters
-        done_version = VERSION+'\n'+file_extension+'\n'+trim_frames+'\n'+str(frame_width)+'\n'+str(TRIM_THRESHOLD)+'\n'+IMAGE_QUALITY
+        done_version = VERSION+'\n'+file_extension+'\n'+trim_frames+'\n'+str(frame_width)+'\n'+str(TRIM_THRESHOLD)+'\n'+str(IMAGE_QUALITY)
 
         if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version:
             print('image extraction results missing or version did not match, extracting images for {video_name}'.format(video_name=video_name))
