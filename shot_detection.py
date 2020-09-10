@@ -5,7 +5,7 @@ from idmapper import TSVIdMapper
 from tqdm import tqdm
 import shutil
 
-VERSION = '20200909'      # the version of the script
+VERSION = '20200910'      # the version of the script
 EXTRACTOR = 'shotdetection'
 
 
@@ -40,7 +40,11 @@ def main(videos_root, features_root, sensitivity, videoids, idmapper):
         done_file_path = os.path.join(features_dir, '.done')
 
         v_path = os.path.join(videos_root, video_rel_path)
-        if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == VERSION:
+
+        # create the version for a run, based on the script version and the used parameters
+        done_version = VERSION+'\n'+sensitivity
+
+        if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version:
             print('shot detection results missing or version did not match, detecting shots for {video_name}'.format(video_name=video_name))
 
             # create the folder for the shot-detection, delete the old folder to prevent issues with older versions
@@ -55,7 +59,7 @@ def main(videos_root, features_root, sensitivity, videoids, idmapper):
             # create a hidden file to signal that the asr for a movie is done
             # write the current version of the script in the file
             with open(done_file_path, 'w') as d:
-                d.write(VERSION)
+                d.write(done_version)
 
 
 if __name__ == "__main__":
@@ -65,7 +69,7 @@ if __name__ == "__main__":
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
     parser.add_argument('file_mappings', help='path to file mappings .tsv-file')
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
-    parser.add_argument('--sensitivity', default=60, help='sets the sensitivity of the shot_detection, expects an integer ,default value is 60')
+    parser.add_argument('--sensitivity', default='60', help='sets the sensitivity of the shot_detection, expects an integer ,default value is 60')
     args = parser.parse_args()
 
     idmapper = TSVIdMapper(args.file_mappings)
