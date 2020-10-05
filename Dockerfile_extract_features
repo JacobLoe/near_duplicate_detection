@@ -13,7 +13,8 @@ COPY extract_features.py /root
 COPY crop_image.py /root
 COPY idmapper.py /root
 
-VOLUME "/data"
+VOLUME /root/.keras
+VOLUME /data
 
 WORKDIR /root
 
