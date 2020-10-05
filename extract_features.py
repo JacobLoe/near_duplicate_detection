@@ -12,6 +12,7 @@ import shutil
 
 VERSION = '20200910'      # the version of the script
 EXTRACTOR = 'features'
+STANDALONE = False  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
 
 def extract_features(model, frame):
@@ -83,8 +84,9 @@ def main(features_root, file_extension, videoids, idmapper):
             extract_all_features_from_movie(features_dir, file_extension, model)
             # create a hidden file to signal that the feature extraction for a movie is done
             # write the current version of the script in the file
-            with open(done_file_path, 'w') as d:
-                d.write(done_version)
+            if STANDALONE:
+                with open(done_file_path, 'w') as d:
+                    d.write(done_version)
 
 
 if __name__ == "__main__":

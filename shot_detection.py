@@ -6,7 +6,8 @@ from tqdm import tqdm
 import shutil
 
 VERSION = '20200910'      # the version of the script
-EXTRACTOR = 'shotdetection'
+EXTRACTOR = 'shotdetection'     #
+STANDALONE = False  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
 
 def shot_detect(v_path, f_path, sensitivity):
@@ -58,8 +59,9 @@ def main(videos_root, features_root, sensitivity, videoids, idmapper):
 
             # create a hidden file to signal that the asr for a movie is done
             # write the current version of the script in the file
-            with open(done_file_path, 'w') as d:
-                d.write(done_version)
+            if STANDALONE:
+                with open(done_file_path, 'w') as d:
+                    d.write(done_version)
 
 
 if __name__ == "__main__":

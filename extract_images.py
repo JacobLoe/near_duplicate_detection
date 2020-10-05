@@ -15,6 +15,7 @@ TRIM_THRESHOLD = 12     # the threshold for the trim function, pixels with value
 IMAGE_QUALITY = 90      # the quality to save images in, higher values mean less compression
 VERSION = '20200910'      # the version of the script
 EXTRACTOR = 'frames'
+STANDALONE = False  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
 
 def read_shotdetect_xml(path):
@@ -207,8 +208,9 @@ def main(videos_root, features_root, file_extension, trim_frames, frame_width, v
 
             # create a hidden file to signal that the image extraction for a movie is done
             # write the current version of the script in the file
-            with open(done_file_path, 'w') as d:
-                d.write(done_version)
+            if STANDALONE:
+                with open(done_file_path, 'w') as d:
+                    d.write(done_version)
 
 
 if __name__ == "__main__":
