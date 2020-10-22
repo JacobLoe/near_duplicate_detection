@@ -4,13 +4,28 @@ import os
 from idmapper import TSVIdMapper
 from tqdm import tqdm
 import shutil
+import xml.etree.ElementTree as ET
 
 VERSION = '20200910'      # the version of the script
 EXTRACTOR = 'shotdetection'     #
 STANDALONE = False  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
 
-def shot_detect(v_path, f_path, sensitivity):
+def check_shotdetection(xml_path, video_name):
+    # checks if the shotdetection has run correctly
+    # read the result.xml from a shotdetection
+    tree = ET.parse(xml_path)
+    root = tree.getroot().findall('content')
+    c = []
+    for child in root[0].iter():
+        if child.tag == 'video' or child.tag == 'audio':
+            c.append(child.text)
+    # check the content of video and audio.
+    if c[0] is None or c[0] == 'null' and c[1] is None or c[1] == 'null':
+        raise Exception('{videoname} is not a valid video. Either the file is corrupted or not a video'.format(videoname=video_name))
+
+
+def shot_detect(v_path, f_path, sensitivity, video_name):
     keywords = ['-i', v_path,
                 '-o', f_path,
                 '-s', sensitivity]
@@ -24,6 +39,8 @@ def shot_detect(v_path, f_path, sensitivity):
     with open(log_file, 'w') as f:
         f.write(str(p.stderr))
 
+    check_shotdetection(os.path.join(f_path, 'result.xml'), video_name)
+
 
 def main(videos_root, features_root, sensitivity, videoids, idmapper):
     # repeat until all movies are processed correctly
@@ -31,7 +48,7 @@ def main(videos_root, features_root, sensitivity, videoids, idmapper):
         try:
             video_rel_path = idmapper.get_filename(videoid)
         except KeyError as err:
-            print("No such videoid: '{videoid}'".format(videoid=videoid))
+            raise KeyError("No such videoid: '{videoid}'".format(videoid=err))
 
         video_name = os.path.basename(video_rel_path)[:-4]
         features_dir = os.path.join(features_root, videoid, EXTRACTOR)
@@ -55,7 +72,7 @@ def main(videos_root, features_root, sensitivity, videoids, idmapper):
                 shutil.rmtree(features_dir)
                 os.makedirs(features_dir)
 
-            shot_detect(v_path, features_dir, sensitivity)
+            shot_detect(v_path, features_dir, sensitivity, video_name)
 
             # create a hidden file to signal that the asr for a movie is done
             # write the current version of the script in the file
