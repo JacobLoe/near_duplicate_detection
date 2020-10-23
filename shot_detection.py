@@ -11,7 +11,7 @@ EXTRACTOR = 'shotdetection'     #
 STANDALONE = False  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
 
-def check_shotdetection(xml_path, video_name):
+def check_shotdetection(xml_path, video_name, stderr, stdout):
     # checks if the shotdetection has run correctly
     # read the result.xml from a shotdetection
     tree = ET.parse(xml_path)
@@ -22,7 +22,9 @@ def check_shotdetection(xml_path, video_name):
             c.append(child.text)
     # check the content of video and audio.
     if c[0] is None or c[0] == 'null' and c[1] is None or c[1] == 'null':
-        raise Exception('{videoname} is not a valid video. Either the file is corrupted or not a video'.format(videoname=video_name))
+        raise Exception('{videoname} is not a valid video. Either the file is corrupted or not a video \n'
+                        'Shotdetection error: {stderr} \n'
+                        'Shotdetection output: {stdout}'.format(videoname=video_name, stderr=stderr, stdout=stdout))
 
 
 def shot_detect(v_path, f_path, sensitivity, video_name):
@@ -39,7 +41,7 @@ def shot_detect(v_path, f_path, sensitivity, video_name):
     with open(log_file, 'w') as f:
         f.write(str(p.stderr))
 
-    check_shotdetection(os.path.join(f_path, 'result.xml'), video_name)
+    check_shotdetection(os.path.join(f_path, 'result.xml'), video_name, p.stderr, p.stdout)
 
 
 def main(videos_root, features_root, sensitivity, videoids, idmapper):
