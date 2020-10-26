@@ -6,7 +6,7 @@ from tqdm import tqdm
 import shutil
 import xml.etree.ElementTree as ET
 
-VERSION = '20200910'      # the version of the script
+VERSION = '20201023'      # the version of the script
 EXTRACTOR = 'shotdetection'     #
 STANDALONE = False  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
@@ -22,7 +22,7 @@ def check_shotdetection(xml_path, video_name, stderr, stdout):
             c.append(child.text)
     # check the content of video and audio.
     if c[0] is None or c[0] == 'null' and c[1] is None or c[1] == 'null':
-        raise Exception('{videoname} is not a valid video. Either the file is corrupted or not a video \n'
+        raise Exception('"{videoname}" is not a valid video. Either the file is corrupted or not a video \n'
                         'Shotdetection error: {stderr} \n'
                         'Shotdetection output: {stdout}'.format(videoname=video_name, stderr=stderr, stdout=stdout))
 
@@ -57,15 +57,14 @@ def main(videos_root, features_root, sensitivity, videoids, idmapper):
         if not os.path.isdir(features_dir):
             os.makedirs(features_dir)
 
-        done_file_path = os.path.join(features_dir, '.done')
-
         v_path = os.path.join(videos_root, video_rel_path)
 
         # create the version for a run, based on the script version and the used parameters
+        done_file_path = os.path.join(features_dir, '.done')
         done_version = VERSION+'\n'+sensitivity
 
         if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version:
-            print('shot detection results missing or version did not match, detecting shots for {video_name}'.format(video_name=video_name))
+            print('shot detection results missing or version did not match, detecting shots for "{video_name}"'.format(video_name=video_name))
 
             # create the folder for the shot-detection, delete the old folder to prevent issues with older versions
             if not os.path.isdir(features_dir):

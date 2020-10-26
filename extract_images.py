@@ -10,10 +10,10 @@ from video_aspect_ratio import get_aspect_ratios
 from idmapper import TSVIdMapper
 import shutil
 
-FRAME_OFFSET_MS = 3*41  # frame offset in ms, one frame equals ~41ms, this jumps 3 frames ahead
+FRAME_OFFSET_MS = 3  # frame offset in frames, jumps 3 frames ahead
 TRIM_THRESHOLD = 12     # the threshold for the trim function, pixels with values lower are considered black and croppped
 IMAGE_QUALITY = 90      # the quality to save images in, higher values mean less compression
-VERSION = '20200910'      # the version of the script
+VERSION = '20201026'      # the version of the script
 EXTRACTOR = 'frames'
 STANDALONE = False  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
@@ -25,18 +25,30 @@ def read_shotdetect_xml(path):
     for child in root[0].iter():
         if child.tag == 'shot':
             attribs = child.attrib
-            timestamps.append((int(attribs['msbegin']), int(attribs['msbegin'])+int(attribs['msduration'])-1))  # ms
-    return timestamps  # in ms
+            timestamps.append((int(attribs['msbegin']), int(attribs['msbegin'])+int(attribs['msduration'])-1))
+    return timestamps
 
 
 # read video file frame by frame, beginning and ending with a timestamp
-def save_shot_frames(video_path, frames_path, start_ms, end_ms, frame_width, file_extension):
+def save_shot_frames(video_path, features_dir, start_ms, end_ms, frame_width, file_extension, video_name):
     vid = cv2.VideoCapture(video_path)
+
     display_aspect_ratio, pixel_aspect_ratio, storage_aspect_ratio = get_aspect_ratios(video_path)
+    if display_aspect_ratio == 0 or pixel_aspect_ratio == 0 or storage_aspect_ratio == 0:
+        raise Exception('Something went wrong while extracting the aspect ratio for "{video_name}"'.format(video_name))
+
+    # compute the offset depending on the fps of the video
+    offset = FRAME_OFFSET_MS * int(1000/vid.get(cv2.CAP_PROP_FPS))
+    start_ms = start_ms + offset
+    end_ms = end_ms - offset
+
+    # create a folder for a shot named after the timestamp of the first frame in that shot
+    frames_path = os.path.join(features_dir, str(start_ms))
+    if not os.path.isdir(frames_path):
+        os.makedirs(frames_path)
 
     for timestamp in range(start_ms, end_ms, 1000):
-        if not os.path.isdir(frames_path):
-            os.makedirs(frames_path)
+
         vid.set(cv2.CAP_PROP_POS_MSEC, timestamp)
         ret, frame = vid.read()
 
@@ -58,14 +70,26 @@ def save_shot_frames(video_path, frames_path, start_ms, end_ms, frame_width, fil
         frame.save(name, format=file_extension[1:], quality=IMAGE_QUALITY)
 
 
-def get_trimmed_shot_resolution(video_path, frames_path, start_ms, end_ms, frame_width, file_extension):
+def get_trimmed_shot_resolution(video_path, features_dir, start_ms, end_ms, frame_width, file_extension, video_name):
     vid = cv2.VideoCapture(video_path)
+
     display_aspect_ratio, pixel_aspect_ratio, storage_aspect_ratio = get_aspect_ratios(video_path)
+    if display_aspect_ratio == 0 or pixel_aspect_ratio == 0 or storage_aspect_ratio == 0:
+        raise Exception('Something went wrong while extracting the aspect ratio for "{video_name}"'.format(video_name))
+
+    # compute the offset depending on the fps of the video
+    offset = FRAME_OFFSET_MS * int(1000/vid.get(cv2.CAP_PROP_FPS))
+    start_ms = start_ms + offset
+    end_ms = end_ms - offset
+
+    # create a folder for a shot named after the timestamp of the first frame in that shot
+    frames_path = os.path.join(features_dir, str(start_ms))
+    if not os.path.isdir(frames_path):
+        os.makedirs(frames_path)
 
     bounding_boxes = []
     for timestamp in range(start_ms, end_ms, 1000):
-        if not os.path.isdir(frames_path):
-            os.makedirs(frames_path)
+
         vid.set(cv2.CAP_PROP_POS_MSEC, timestamp)
         ret, frame = vid.read()
 
@@ -86,7 +110,7 @@ def get_trimmed_shot_resolution(video_path, frames_path, start_ms, end_ms, frame
         frame_array = Image.fromarray(frame)
 
         # get the trimmed frame and the corresponding bounding box
-        # if none exist define both as empty sets
+        # if none exist define both as empty
         try:
             frame_array, bounding_box = trim(frame_array, TRIM_THRESHOLD)
         except:
@@ -106,7 +130,8 @@ def get_trimmed_shot_resolution(video_path, frames_path, start_ms, end_ms, frame
     upper_bounds = np.amax(bounding_boxes, axis=0)
     shot_bounding_box = tuple(np.concatenate((lower_bounds[:2], upper_bounds[2:])))
 
-    return shot_bounding_box
+    # return the specific offset for the video too, to later use it in the crop_saved_frames function
+    return shot_bounding_box, offset
 
 
 def crop_saved_frames(frames_path, start_ms, end_ms, bounding_box, file_extension):
@@ -120,6 +145,7 @@ def crop_saved_frames(frames_path, start_ms, end_ms, bounding_box, file_extensio
 
 
 def main(videos_root, features_root, file_extension, trim_frames, frame_width, videoids, idmapper):
+    frame_width = int(frame_width)
     max_bbox_pro_shot = {}
     bounding_box_template = {}
     # repeat until all movies are processed correctly
@@ -127,22 +153,35 @@ def main(videos_root, features_root, file_extension, trim_frames, frame_width, v
         try:
             video_rel_path = idmapper.get_filename(videoid)
         except KeyError as err:
-            print("No such videoid: '{videoid}'".format(videoid=videoid))
+            raise KeyError("No such videoid: '{videoid}'".format(videoid=videoid))
 
         video_name = os.path.basename(video_rel_path)[:-4]
         features_dir = os.path.join(features_root, videoid, EXTRACTOR)
 
-        done_file_path = os.path.join(features_dir, '.done')
-
         v_path = os.path.join(videos_root, video_rel_path)
         # get the shot timestamps generated by shot-detect
         shot_timestamps = read_shotdetect_xml(os.path.join(features_root, videoid, 'shotdetection/result.xml'))
+        if not shot_timestamps:
+            raise Exception(f'No shots could be found. Check the shotdetection results for "{video_name}" again'.format(video_name=video_name))
 
+        # check .done-file of the shotdetection for parameters to be added to the .done-file of the image extraction
+        # assume that the shotdetection is set to STANDALONE if the image extraction is, Otherwise this check will be skipped
+        previous_parameters = ''
+        try:
+            if STANDALONE:
+                with open(os.path.join(features_root, videoid, 'shotdetection', '.done')) as done_file:
+                    for i, line in enumerate(done_file):
+                        if not i == 0:
+                            previous_parameters = '\n' + previous_parameters + line
+        except FileNotFoundError as err:
+            raise Exception('The results of the shotdetection for "{video_name}" cannot be found. Shotdetection has to be run again'.format(video_name=video_name))
+
+        done_file_path = os.path.join(features_dir, '.done')
         # create the version for a run, based on the script version and the used parameters
-        done_version = VERSION+'\n'+file_extension+'\n'+trim_frames+'\n'+str(frame_width)+'\n'+str(TRIM_THRESHOLD)+'\n'+str(IMAGE_QUALITY)
+        done_version = VERSION+'\n'+file_extension+'\n'+trim_frames+'\n'+str(frame_width)+'\n'+str(TRIM_THRESHOLD)+'\n'+str(IMAGE_QUALITY)+previous_parameters
 
         if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version:
-            print('image extraction results missing or version did not match, extracting images for {video_name}'.format(video_name=video_name))
+            print('image extraction results missing or version did not match, extracting images for "{video_name}"'.format(video_name=video_name))
 
             # create the folder for the frames, delete the old folder to prevent issues with older versions
             if not os.path.isdir(features_dir):
@@ -153,18 +192,18 @@ def main(videos_root, features_root, file_extension, trim_frames, frame_width, v
 
             if trim_frames == 'yes':
 
-                print('extracting movie resolution for {}'.format(video_name))
+                print('extracting movie resolution for "{}"'.format(video_name))
                 aux_bbox_dict = {}  # save the max resolution of each shot of a movie in a dict, keys are the start_frame of the shot
                 for start_ms, end_ms in tqdm(shot_timestamps):
-                    # apply the offset to the timestamps
-                    start_ms = start_ms + FRAME_OFFSET_MS
-                    end_ms = end_ms - FRAME_OFFSET_MS
-                    frames_path = os.path.join(features_dir, str(start_ms))
-                    aux_bbox_dict[start_ms] = get_trimmed_shot_resolution(v_path,
-                                                                          frames_path,
-                                                                          start_ms, end_ms,
-                                                                          frame_width,
-                                                                          file_extension)
+
+                    bbox_dict, offset = get_trimmed_shot_resolution(v_path,
+                                                                    features_dir,
+                                                                    start_ms, end_ms,
+                                                                    frame_width,
+                                                                    file_extension,
+                                                                    video_name)
+                    aux_bbox_dict[start_ms+offset] = bbox_dict
+
                 max_bbox_pro_shot[video_name] = aux_bbox_dict
                 # get the lower and upper bounds of all the bounding boxes in a movie
                 aux = [x for x in aux_bbox_dict.values()]
@@ -175,11 +214,10 @@ def main(videos_root, features_root, file_extension, trim_frames, frame_width, v
                 print('starting image extraction')
                 for start_ms, end_ms in tqdm(shot_timestamps):
 
-                    # apply the offset to the timestamps
-                    start_ms = start_ms + FRAME_OFFSET_MS
-                    end_ms = end_ms - FRAME_OFFSET_MS
+                    # compute the offset depending on the fps of the video
+                    start_ms = start_ms + offset
+                    end_ms = end_ms - offset
 
-                    # create a dir for a specific shot, the name are the boundaries in ms
                     frames_path = os.path.join(features_dir, str(start_ms))
 
                     # compare the resolution, after trimming of the shot, with the maximum resolution in the movie
@@ -193,18 +231,13 @@ def main(videos_root, features_root, file_extension, trim_frames, frame_width, v
                                       file_extension)
             else:
                 for start_ms, end_ms in tqdm(shot_timestamps):
-                    # apply the offset to the timestamps
-                    start_ms = start_ms + FRAME_OFFSET_MS
-                    end_ms = end_ms - FRAME_OFFSET_MS
-
-                    # create a dir for a specific shot, the name are the boundaries in ms
-                    frames_path = os.path.join(features_dir, str(start_ms))
 
                     save_shot_frames(v_path,
-                                     frames_path,
+                                     features_dir,
                                      start_ms, end_ms,
                                      frame_width,
-                                     file_extension)
+                                     file_extension,
+                                     video_name)
 
             # create a hidden file to signal that the image extraction for a movie is done
             # write the current version of the script in the file
@@ -222,7 +255,7 @@ if __name__ == "__main__":
     parser.add_argument('file_mappings', help='path to file mappings .tsv-file')
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
     parser.add_argument("--trim_frames", default='no', choices=('yes', 'no'), help="decide whether to remove or keep black borders in the movies")
-    parser.add_argument("--frame_width", type=int, help="set the width at which the frames are saved")
+    parser.add_argument("--frame_width", type=int, default=299, help="set the width at which the frames are saved")
     parser.add_argument("--file_extension", default='.jpeg', choices=('.jpeg', '.png'), help="define the file-extension of the frames, only .png and .jpg are supported, default is .jpeg")
     args = parser.parse_args()
 
