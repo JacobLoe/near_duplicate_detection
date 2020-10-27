@@ -7,8 +7,9 @@ from scipy.spatial.distance import euclidean
 import xml.etree.ElementTree as ET
 from idmapper import TSVIdMapper
 import shutil
+import cv2
 
-FRAME_OFFSET_MS = 3*41  # frame offset in ms, one frame equals ~42ms, this jumps 3 frames ahead
+FRAME_OFFSET_MS = 3  # frame offset in ms, one frame equals ~42ms, this jumps 3 frames ahead
 VERSION = '20200910'      # the version of the script
 EXTRACTOR = 'aspectratio'
 STANDALONE = False  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
@@ -26,7 +27,13 @@ def read_shotdetect_xml(path):
     return timestamps
 
 
-def save_aspect_ratio_to_csv(ar_dir_path, file_extension, videoname):
+def save_aspect_ratio_to_csv(video_path, ar_dir_path, file_extension, videoname):
+    # open the video and get the fps
+    vid = cv2.VideoCapture(video_path)
+    if not vid.isOpened():
+        raise IOError("Unable to read from video: '{v_path}'".format(v_path=video_path))
+    # compute the offset depending on the fps of the video
+    offset = FRAME_OFFSET_MS * int(1000/vid.get(cv2.CAP_PROP_FPS))
 
     shot_timestamps = read_shotdetect_xml(os.path.join(os.path.split(ar_dir_path)[0], 'shotdetection/result.xml'))
     if not shot_timestamps:
@@ -43,8 +50,8 @@ def save_aspect_ratio_to_csv(ar_dir_path, file_extension, videoname):
     with open(ar_csv_path, 'w', newline='') as f:
         for start_ms, end_ms in tqdm(shot_timestamps):
             # apply the offset to the timestamps
-            start_ms = start_ms + FRAME_OFFSET_MS
-            end_ms = end_ms - FRAME_OFFSET_MS
+            start_ms = start_ms + offset
+            end_ms = end_ms - offset
             if not list(range(start_ms, end_ms, 1000)) == []:   # if the shot with the offset is too short, the shot is ignored
 
                 frame = str(start_ms)+file_extension
@@ -65,7 +72,7 @@ def save_aspect_ratio_to_csv(ar_dir_path, file_extension, videoname):
                 f.write('\n')
 
 
-def main(features_root, file_extension, videoids, idmapper):
+def main(videos_root, features_root, file_extension, videoids, idmapper):
     # repeat until all movies are processed correctly
     for videoid in tqdm(videoids):
         try:
@@ -75,6 +82,7 @@ def main(features_root, file_extension, videoids, idmapper):
 
         video_name = os.path.basename(video_rel_path)[:-4]
         features_dir = os.path.join(features_root, videoid, EXTRACTOR)
+        v_path = os.path.join(videos_root, video_rel_path)
 
         # check .done-file of the image extraction for parameters to be added to the .done-file of the aspect ratio extraction
         # assume that the image extraction is set to STANDALONE if the aspect ratio extraction is, Otherwise this check will be skipped
@@ -102,7 +110,7 @@ def main(features_root, file_extension, videoids, idmapper):
                 shutil.rmtree(features_dir)
                 os.makedirs(features_dir)
 
-            save_aspect_ratio_to_csv(features_dir, file_extension, video_name)
+            save_aspect_ratio_to_csv(v_path, features_dir, file_extension, video_name)
 
             # create a hidden file to signal that the feature extraction for a movie is done
             # write the current version of the script in the file
@@ -114,6 +122,8 @@ def main(features_root, file_extension, videoids, idmapper):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("videos_dir", help="the directory where the video-files are stored,"
+                                           "the names of sub-directories need to start with different letters")
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
     parser.add_argument('file_mappings', help='path to file mappings .tsv-file')
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
@@ -123,4 +133,4 @@ if __name__ == "__main__":
     idmapper = TSVIdMapper(args.file_mappings)
     videoids = args.videoids if len(args.videoids) > 0 else parser.error('no videoids found')
 
-    main(args.features_dir, args.file_extension, videoids, idmapper)
+    main(args.videos_dir, args.features_dir, args.file_extension, videoids, idmapper)

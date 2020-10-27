@@ -32,6 +32,8 @@ def read_shotdetect_xml(path):
 # read video file frame by frame, beginning and ending with a timestamp
 def save_shot_frames(video_path, features_dir, start_ms, end_ms, frame_width, file_extension, video_name):
     vid = cv2.VideoCapture(video_path)
+    if not vid.isOpened():
+        raise IOError("Unable to read from video: '{v_path}'".format(v_path=video_path))
 
     display_aspect_ratio, pixel_aspect_ratio, storage_aspect_ratio = get_aspect_ratios(video_path)
     if display_aspect_ratio == 0 or pixel_aspect_ratio == 0 or storage_aspect_ratio == 0:
@@ -72,6 +74,8 @@ def save_shot_frames(video_path, features_dir, start_ms, end_ms, frame_width, fi
 
 def get_trimmed_shot_resolution(video_path, features_dir, start_ms, end_ms, frame_width, file_extension, video_name):
     vid = cv2.VideoCapture(video_path)
+    if not vid.isOpened():
+        raise IOError("Unable to read from video: '{v_path}'".format(v_path=video_path))
 
     display_aspect_ratio, pixel_aspect_ratio, storage_aspect_ratio = get_aspect_ratios(video_path)
     if display_aspect_ratio == 0 or pixel_aspect_ratio == 0 or storage_aspect_ratio == 0:
