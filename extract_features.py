@@ -38,8 +38,8 @@ def extract_all_features_from_movie(features_path, file_extension, model, video_
     frames_path = glob.glob(os.path.join(frames_path, '**', '*' + file_extension), recursive=True)
     if not frames_path:
         raise Exception('There were no images found with the file extension "{file_extension1}". '
-                        'Check if the correct extension was used for the feature extraction or'
-                        'consider running the image extraction for "{video_name} with "{file_extension2}" as the extension"'
+                        'Check if the correct extension was used for the feature extraction or '
+                        'if the image extraction for "{video_name} was run with "{file_extension2}" as the extension"'
                         ''.format(file_extension1=file_extension, file_extension2=file_extension, video_name=video_name))
 
     for fp in tqdm(frames_path):

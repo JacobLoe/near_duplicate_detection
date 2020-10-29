@@ -127,7 +127,7 @@ def get_trimmed_shot_resolution(video_path, features_dir, start_ms, end_ms, fram
 
     # if the shot is too short return a empty/invalid bounding box
     if not bounding_boxes:
-        return np.array((0, 0, 0, 0))   # FIXME find a better solution to deal with the emtpy shots
+        return np.array((0, 0, 0, 0)), offset   # FIXME find a better solution to deal with the emtpy shots
 
     # get the lower and upper bounds of all the bounding boxes in a shot
     lower_bounds = np.amin(bounding_boxes, axis=0)

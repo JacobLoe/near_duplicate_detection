@@ -34,6 +34,8 @@ def save_aspect_ratio_to_csv(video_path, ar_dir_path, file_extension, videoname)
         raise IOError("Unable to read from video: '{v_path}'".format(v_path=video_path))
     # compute the offset depending on the fps of the video
     offset = FRAME_OFFSET_MS * int(1000/vid.get(cv2.CAP_PROP_FPS))
+    vid.release()
+    cv2.destroyAllWindows()
 
     shot_timestamps = read_shotdetect_xml(os.path.join(os.path.split(ar_dir_path)[0], 'shotdetection/result.xml'))
     if not shot_timestamps:
