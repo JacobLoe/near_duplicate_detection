@@ -12,7 +12,7 @@ import shutil
 
 VERSION = '20200910'      # the version of the script
 EXTRACTOR = 'features'
-STANDALONE = False  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
+STANDALONE = True  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
 
 def extract_features(model, frame):
@@ -88,7 +88,7 @@ def main(features_root, file_extension, videoids, idmapper):
         # create the version for a run, based on the script version and the used parameters
         done_version = VERSION+'\n'+file_extension+previous_parameters
 
-        if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version:
+        if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version or force_run:
             print('feature extraction results missing or version did not match, extracting features for "{video_name}"'.format(video_name=video_name))
             # create the folder for the features, delete the old folder to prevent issues with older versions
             if not os.path.isdir(features_dir):
@@ -111,7 +111,10 @@ if __name__ == "__main__":
     parser.add_argument('file_mappings', help='path to file mappings .tsv-file')
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
     parser.add_argument("--file_extension", default='.jpeg', choices=('.jpeg', '.png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpeg")
+    parser.add_argument("--force_run", default=False, type=bool, help='sets whether the script runs regardless of the version of .done-files')
     args = parser.parse_args()
+
+    force_run = args.force_run
 
     idmapper = TSVIdMapper(args.file_mappings)
     videoids = args.videoids if len(args.videoids) > 0 else parser.error('no videoids found')
