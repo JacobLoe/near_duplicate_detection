@@ -1,7 +1,6 @@
 import subprocess
 import argparse
 import os
-from idmapper import TSVIdMapper
 from tqdm import tqdm
 import shutil
 import xml.etree.ElementTree as ET
@@ -11,7 +10,7 @@ EXTRACTOR = 'shotdetection'     #
 STANDALONE = True  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
 
-def check_shotdetection(xml_path, video_name, stderr, stdout):
+def check_shotdetection(xml_path, stderr, stdout):
     # checks if the shotdetection has run correctly
     # read the result.xml from a shotdetection
     tree = ET.parse(xml_path)
@@ -22,12 +21,12 @@ def check_shotdetection(xml_path, video_name, stderr, stdout):
             c.append(child.text)
     # check the content of video and audio.
     if c[0] is None or c[0] == 'null' and c[1] is None or c[1] == 'null':
-        raise Exception('"{videoname}" is not a valid video. Either the file is corrupted or not a video \n'
+        raise Exception('The video is not a valid video. Either the file is corrupted or not a video \n'
                         'Shotdetection error: {stderr} \n'
-                        'Shotdetection output: {stdout}'.format(videoname=video_name, stderr=stderr, stdout=stdout))
+                        'Shotdetection output: {stdout}'.format(stderr=stderr, stdout=stdout))
 
 
-def shot_detect(v_path, f_path, sensitivity, video_name):
+def shot_detect(v_path, f_path, sensitivity):
     keywords = ['-i', v_path,
                 '-o', f_path,
                 '-s', sensitivity]
@@ -41,30 +40,25 @@ def shot_detect(v_path, f_path, sensitivity, video_name):
     with open(log_file, 'w') as f:
         f.write(str(p.stderr))
 
-    check_shotdetection(os.path.join(f_path, 'result.xml'), video_name, p.stderr, p.stdout)
+    check_shotdetection(os.path.join(f_path, 'result.xml'), p.stderr, p.stdout)
 
 
-def main(videos_root, features_root, sensitivity, videoids, idmapper):
+def main(features_root, sensitivity, videoids):
     # repeat until all movies are processed correctly
     for videoid in tqdm(videoids):
-        try:
-            video_rel_path = idmapper.get_filename(videoid)
-        except KeyError as err:
-            raise KeyError("No such videoid: '{videoid}'".format(videoid=err))
 
-        video_name = os.path.basename(video_rel_path)[:-4]
+        # the script expects a fixed directory
+        video_dir = os.path.join(features_root, videoid, '{videoid}.mp4'.format(videoid))
         features_dir = os.path.join(features_root, videoid, EXTRACTOR)
         if not os.path.isdir(features_dir):
             os.makedirs(features_dir)
-
-        v_path = os.path.join(videos_root, video_rel_path)
 
         # create the version for a run, based on the script version and the used parameters
         done_file_path = os.path.join(features_dir, '.done')
         done_version = VERSION+'\n'+sensitivity
 
         if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version or force_run:
-            print('shot detection results missing or version did not match, detecting shots for "{video_name}"'.format(video_name=video_name))
+            print('shot detection results missing or version did not match, detecting shots for video')
 
             # create the folder for the shot-detection, delete the old folder to prevent issues with older versions
             if not os.path.isdir(features_dir):
@@ -73,7 +67,7 @@ def main(videos_root, features_root, sensitivity, videoids, idmapper):
                 shutil.rmtree(features_dir)
                 os.makedirs(features_dir)
 
-            shot_detect(v_path, features_dir, sensitivity, video_name)
+            shot_detect(video_dir, features_dir, sensitivity)
 
             # create a hidden file to signal that the asr for a movie is done
             # write the current version of the script in the file
@@ -84,10 +78,7 @@ def main(videos_root, features_root, sensitivity, videoids, idmapper):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("videos_dir", help="the directory where the video-files are stored,"
-                                           "the names of sub-directories need to start with different letters")
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
-    parser.add_argument('file_mappings', help='path to file mappings .tsv-file')
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
     parser.add_argument('--sensitivity', default='60', help='sets the sensitivity of the shot_detection, expects an integer ,default value is 60')
     parser.add_argument("--force_run", default=False, type=bool, help='sets whether the script runs regardless of the version of .done-files')
@@ -95,8 +86,4 @@ if __name__ == "__main__":
 
     force_run = args.force_run
 
-    idmapper = TSVIdMapper(args.file_mappings)
-    videoids = args.videoids if len(args.videoids) > 0 else parser.error('no videoids found')
-
-    main(args.videos_dir, args.features_dir, args.sensitivity, videoids, idmapper)
-
+    main(args.features_dir, args.sensitivity, args.videoids)
