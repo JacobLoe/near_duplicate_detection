@@ -5,8 +5,8 @@ from tqdm import tqdm
 import shutil
 import xml.etree.ElementTree as ET
 
-VERSION = '20201023'      # the version of the script
-EXTRACTOR = 'shotdetection'     #
+VERSION = '20201115'      # the version of the script
+EXTRACTOR = 'shotdetection'
 STANDALONE = True  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
 
@@ -48,7 +48,7 @@ def main(features_root, sensitivity, videoids):
     for videoid in tqdm(videoids):
 
         # the script expects a fixed directory
-        video_dir = os.path.join(features_root, videoid, '{videoid}.mp4'.format(videoid))
+        video_dir = os.path.join(features_root, videoid, 'media', videoid+'.mp4')
         features_dir = os.path.join(features_root, videoid, EXTRACTOR)
         if not os.path.isdir(features_dir):
             os.makedirs(features_dir)
