@@ -27,6 +27,7 @@ def check_shotdetection(xml_path, stderr, stdout):
 
 
 def shot_detect(v_path, f_path, sensitivity):
+    print('v_path', v_path)
     keywords = ['-i', v_path,
                 '-o', f_path,
                 '-s', sensitivity]
@@ -39,6 +40,8 @@ def shot_detect(v_path, f_path, sensitivity):
     log_file = os.path.join(f_path, 'log.txt')
     with open(log_file, 'w') as f:
         f.write(str(p.stderr))
+    print('stderr: ', p.stderr, '\n')
+    print('stdout: ', p.stdout)
 
     check_shotdetection(os.path.join(f_path, 'result.xml'), p.stderr, p.stdout)
 
@@ -49,7 +52,11 @@ def main(features_root, sensitivity, videoids):
 
         # the script expects a fixed directory
         video_dir = os.path.join(features_root, videoid, 'media', videoid+'.mp4')
+        print('features_root: ', features_root)
+        print('videoid: ', videoid)
+        print('video_dir: ', video_dir)
         features_dir = os.path.join(features_root, videoid, EXTRACTOR)
+        print('features_dir: ', features_dir)
         if not os.path.isdir(features_dir):
             os.makedirs(features_dir)
 
