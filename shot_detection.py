@@ -46,7 +46,7 @@ def shot_detect(v_path, f_path, sensitivity):
     check_shotdetection(os.path.join(f_path, 'result.xml'), p.stderr, p.stdout)
 
 
-def main(features_root, sensitivity, videoids):
+def main(features_root, sensitivity, videoids, force_run):
     # repeat until all movies are processed correctly
     for videoid in tqdm(videoids):
 
@@ -91,6 +91,4 @@ if __name__ == "__main__":
     parser.add_argument("--force_run", default=False, type=bool, help='sets whether the script runs regardless of the version of .done-files')
     args = parser.parse_args()
 
-    force_run = args.force_run
-
-    main(args.features_dir, args.sensitivity, args.videoids)
+    main(args.features_dir, args.sensitivity, args.videoids, args.force_run)

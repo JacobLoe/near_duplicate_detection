@@ -1,5 +1,3 @@
-# docker run --rm -it -v $(pwd)/../videos:/video:ro -v /home/jacob/Downloads/hpi/videos/file_mappings.tsv:/file_mappings.tsv:ro -v $(pwd)/static/features_videos:/data -v /home/.keras/:/root/.keras jacobloe/extract_features:0.1 /data/ /video/file_mappings.tsv
-
 # Use an official Python runtime as a parent image
 FROM python:3.6.8-stretch
 
@@ -11,7 +9,6 @@ RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_extract_fe
 
 COPY extract_features.py /root
 COPY crop_image.py /root
-COPY idmapper.py /root
 
 VOLUME /root/.keras
 VOLUME /data
