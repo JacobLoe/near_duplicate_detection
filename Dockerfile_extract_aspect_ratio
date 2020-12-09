@@ -1,5 +1,3 @@
-# docker run --rm -it -v $(pwd)/static/features_videos:/data -v $(pwd)/../videos:/video:ro -v /home/.keras/:/root/.keras jacobloe/extract_aspect_ratio:0.1 /data/ /video/file_mappings.tsv
-
 # opencv needs the python-stretch version
 FROM python:3.6.8-stretch 
 
@@ -10,7 +8,6 @@ COPY requirements_extract_aspect_ratio.txt /root
 RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_extract_aspect_ratio.txt
 
 COPY extract_aspect_ratio.py /root
-COPY idmapper.py /root
 
 VOLUME "/data"
 

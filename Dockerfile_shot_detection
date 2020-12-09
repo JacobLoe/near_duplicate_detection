@@ -9,7 +9,6 @@ RUN pip3 install --trusted-host pypi.python.org argparse==1.4.0
 RUN pip3 install tqdm==4.43.0
 
 COPY shot_detection.py /root
-COPY idmapper.py /root
 
 VOLUME "/data"
 

@@ -9,7 +9,7 @@ from keras.applications.inception_resnet_v2 import preprocess_input
 from keras.models import Model
 import shutil
 
-VERSION = '20201203'      # the version of the script
+VERSION = '20201203'      # the date the script was last changed
 EXTRACTOR = 'features'
 STANDALONE = True  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 

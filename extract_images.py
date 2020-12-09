@@ -12,7 +12,7 @@ import shutil
 FRAME_OFFSET_MS = 3  # frame offset in frames, jumps 3 frames ahead
 TRIM_THRESHOLD = 12     # the threshold for the trim function, pixels with values lower are considered black and croppped
 IMAGE_QUALITY = 90      # the quality to save images in, higher values mean less compression
-VERSION = '20201203'      # the version of the script
+VERSION = '20201203'      # the date the script was last changed
 EXTRACTOR = 'frames'
 STANDALONE = True  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 

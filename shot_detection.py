@@ -5,7 +5,7 @@ from tqdm import tqdm
 import shutil
 import xml.etree.ElementTree as ET
 
-VERSION = '20201115'      # the version of the script
+VERSION = '20201115'      # the date the script was last changed
 EXTRACTOR = 'shotdetection'
 STANDALONE = True  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 

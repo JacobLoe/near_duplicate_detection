@@ -5,12 +5,11 @@ import numpy as np
 from PIL import Image
 from scipy.spatial.distance import euclidean
 import xml.etree.ElementTree as ET
-from idmapper import TSVIdMapper
 import shutil
 import cv2
 
 FRAME_OFFSET_MS = 3  # frame offset in ms, one frame equals ~42ms, this jumps 3 frames ahead
-VERSION = '20201209'      # the version of the script
+VERSION = '20201209'      # the date the script was last changed
 EXTRACTOR = 'aspectratio'
 STANDALONE = True  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
