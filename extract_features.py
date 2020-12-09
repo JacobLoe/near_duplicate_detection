@@ -66,6 +66,7 @@ def main(features_root, file_extension, videoids, force_run):
 
         features_dir = os.path.join(features_root, videoid, EXTRACTOR)
 
+        # FIXME something is wrong with the .done-file
         # check .done-file of the image extraction for parameters to be added to the .done-file of the feature extraction
         # assume that the image extraction is set to STANDALONE if the feature extraction is, Otherwise this check will be skipped
         previous_parameters = ''
@@ -76,7 +77,7 @@ def main(features_root, file_extension, videoids, force_run):
                         if not i == 0:
                             previous_parameters = '\n' + previous_parameters + line
         except FileNotFoundError as err:
-            raise Exception('The results of the image extraction for "{video_name}" cannot be found. The image extraction has to be run again'.format(video_name=video_name))
+            raise Exception('The results of the image extraction cannot be found. The image extraction has to be run again')
 
         done_file_path = os.path.join(features_dir, '.done')
         # create the version for a run, based on the script version and the used parameters

@@ -11,7 +11,6 @@ import hashlib
 from functools import partial
 import time
 
-##########################################################################
 
 UPLOAD_FOLDER = ''
 ALLOWED_EXTENSIONS = set(['png', 'jpeg'])
