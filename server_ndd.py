@@ -7,7 +7,6 @@ from functools import partial
 
 from extract_features import extract_features, load_model
 from crop_image import trim
-from idmapper import TSVIdMapper
 
 import os
 import glob
@@ -32,12 +31,10 @@ logger.propagate = False    # prevent log messages from appearing twice
 
 parser = argparse.ArgumentParser()
 # FIXME: this should be derived from the existing files matching the features found in rder to avoid problems:
-parser.add_argument('file_mappings', help='path to file mappings .tsv-file')
 parser.add_argument("--file_extension", default='.jpeg', choices=('.jpeg', '.png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpg")
 args = parser.parse_args()
 
 inception_model = load_model()
-idmapper = TSVIdMapper(args.file_mappings)
 
 
 def get_features(features_path):
@@ -62,10 +59,10 @@ def get_features(features_path):
         i_frame_path = os.path.join(i_movie[0], i_movie[1], 'frames', i_segment[1], i_feature[1][:-4]+args.file_extension)  # the path to the image corresponding to the feature
 
         # add information for the frame
-        video_rel_path = idmapper.get_filename(i_movie[1])
+        video_rel_path = os.path.join(i_movie[0], i_movie[1], 'media', i_movie[1]+'.mp4')
         video_name = os.path.basename(video_rel_path)[:-4]
 
-        source_video.append(video_name)  # save the name of the source video
+        source_video.append(video_name[:8])  # save the first eight chars of the id as the name of the source video
         shot_begin_frame.append(i_segment[1])  # save the beginning timestamp of the shot the feature is from
         frame_timestamp.append(i_feature[1][:-4])  # save the specific timestamp the feature is at
         frame_path.append(i_frame_path)  # save the path of the feature
@@ -74,6 +71,16 @@ def get_features(features_path):
     info = {'source_video': source_video, 'shot_begin_frame': shot_begin_frame, 'frame_timestamp': frame_timestamp, 'frame_path': frame_path}
     logger.info('done')
     return features, info
+
+
+def encode_image_in_base64(image):
+
+    buf = BytesIO()
+    image.save(buf, 'PNG')
+    encoded_image = buf.getvalue()
+    encoded_image = base64.encodebytes(encoded_image).decode('ascii')
+
+    return encoded_image
 
 
 class RESTHandler(http.server.BaseHTTPRequestHandler):
@@ -112,10 +119,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             logger.info('removed letterbox in target image')
             target_image, _ = trim(target_image, TRIM_THRESHOLD)
 
-        buf = BytesIO()
-        target_image.save(buf, 'PNG')
-        trimmed_target_image = buf.getvalue()
-        trimmed_target_image = base64.encodebytes(trimmed_target_image).decode('ascii')
+        trimmed_target_image = encode_image_in_base64(target_image)
 
         target_image = target_image.resize((image_scale, image_scale))
         target_image.save('target_image.png')
@@ -140,7 +144,11 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         # sort by distance, ascending
         logger.info("sorting distances")
         indices = np.argsort(distances).tolist()
-        lowest_distances = [(distances[i], info_server['source_video'][i], info_server['shot_begin_frame'][i], info_server['frame_timestamp'][i], info_server['frame_path'][i]) for i in indices]
+        lowest_distances = [(distances[i],
+                             info_server['source_video'][i],
+                             info_server['shot_begin_frame'][i],
+                             info_server['frame_timestamp'][i],
+                             encode_image_in_base64(Image.open(info_server['frame_bytes'][i]))) for i in indices]
         logger.info('distances are sorted')
 
         num_results = post_data['num_results']

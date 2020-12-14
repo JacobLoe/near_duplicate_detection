@@ -32,11 +32,12 @@ def write_html_str(results, target_image):
     # append the found images to the html
     for row in results:
         # write an entry for the table, format is: frame_path, source_video, frame_timestamp, shot_begin_frame, distance
-        html_str += str('<tr><td><img src="{}" width="480"></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(row['frame_path'],
-                                                                                                                          row['source_video'],
-                                                                                                                          row['frame_timestamp'],
-                                                                                                                          row['shot_begin_frame'],
-                                                                                                                          row['distance']))
+        html_str += str('<tr><td><img src="data:image/jpg;base64,{frame_bytes}" width="480"></td><td>{source_video}</td>'
+                        '<td>{frame_timestamp}</td><td>{shot_begin_frame}</td><td>{distance}</td></tr>'.format(frame_bytes=row['frame_path'],
+                                                                                                                source_video = row['source_video'],
+                                                                                                                frame_timestamp = row['frame_timestamp'],
+                                                                                                                shot_begin_frame = row['shot_begin_frame'],
+                                                                                                                distance = row['distance']))
 
     html_str += '</table></html>'
     return html_str
