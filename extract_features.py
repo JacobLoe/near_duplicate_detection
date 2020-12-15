@@ -8,10 +8,20 @@ from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.applications.inception_resnet_v2 import preprocess_input
 from keras.models import Model
 import shutil
+import logging
 
-VERSION = '20201203'      # the date the script was last changed
+VERSION = '20201215'      # the date the script was last changed
 EXTRACTOR = 'features'
 STANDALONE = True  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+ch = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.propagate = False    # prevent log messages from appearing twice
 
 
 def extract_features(model, frame):
@@ -24,17 +34,15 @@ def extract_features(model, frame):
 
 
 def load_model():
-    print('load model')
     model = InceptionResNetV2(weights='imagenet', input_shape=(299, 299, 3))
     model = Model(inputs=model.input, output=model.get_layer('avg_pool').output)
-    print('finished loading model')
     return model
 
 
-def extract_all_features_from_movie(features_path, file_extension, model):
-    frames_path = os.path.join(os.path.split(features_path)[0], 'frames')
+def extract_all_features_from_movie(features_dir, file_extension, model):
+    frames_path = os.path.join(os.path.split(features_dir)[0], 'frames')
     # get the paths to all frames for the video
-    frames_path = glob.glob(os.path.join(frames_path, '**', '*' + file_extension), recursive=True)
+    frames_path = glob.glob(os.path.join(frames_path, '*' + file_extension))
     if not frames_path:
         raise Exception('There were no images found with the file extension "{file_extension1}". '
                         'Check if the correct extension was used for the feature extraction or '
@@ -48,14 +56,9 @@ def extract_all_features_from_movie(features_path, file_extension, model):
         frame = frame.resize((299, 299))  # resize the image to the size used by inception
         feature = extract_features(model, frame)  # run the model on the frame
 
-        # create the folder for the shot, to create the same structure as in the frames folder
-        shot_folder_path = os.path.join(features_path, os.path.split(os.path.split(fp)[0])[1])
-        if not os.path.isdir(shot_folder_path):
-            os.mkdir(shot_folder_path)
-
         # get the name from the frame and save the feature with same name
         np_feature_name = os.path.split(fp)[1][:-len(file_extension)]
-        feature_path = os.path.join(shot_folder_path, np_feature_name)
+        feature_path = os.path.join(features_dir, np_feature_name)
         np.save(feature_path, feature)
 
 
@@ -75,16 +78,16 @@ def main(features_root, file_extension, videoids, force_run):
                 with open(os.path.join(features_root, videoid, 'frames', '.done')) as done_file:
                     for i, line in enumerate(done_file):
                         if not i == 0:
-                            previous_parameters = '\n' + previous_parameters + line
+                            previous_parameters += line
         except FileNotFoundError as err:
             raise Exception('The results of the image extraction cannot be found. The image extraction has to be run again')
 
         done_file_path = os.path.join(features_dir, '.done')
         # create the version for a run, based on the script version and the used parameters
-        done_version = VERSION+'\n'+file_extension+previous_parameters
+        done_version = VERSION+'\n'+file_extension+'\n'+previous_parameters
 
         if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version or force_run:
-            print('feature extraction results missing or version did not match, extracting features')
+            logger.info('feature extraction results missing or version did not match, extracting features')
             # create the folder for the features, delete the old folder to prevent issues with older versions
             if not os.path.isdir(features_dir):
                 os.makedirs(features_dir)

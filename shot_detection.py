@@ -4,10 +4,20 @@ import os
 from tqdm import tqdm
 import shutil
 import xml.etree.ElementTree as ET
+import logging
 
-VERSION = '20201115'      # the date the script was last changed
-EXTRACTOR = 'shotdetection'
+VERSION = '20201215'      # the date the script was last changed
+EXTRACTOR = 'shotdetect'
 STANDALONE = True  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+ch = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.propagate = False    # prevent log messages from appearing twice
 
 
 def check_shotdetection(xml_path, stderr, stdout):
@@ -27,7 +37,7 @@ def check_shotdetection(xml_path, stderr, stdout):
 
 
 def shot_detect(v_path, f_path, sensitivity):
-    print('v_path', v_path)
+    logger.debug('v_path', v_path)
     keywords = ['-i', v_path,
                 '-o', f_path,
                 '-s', sensitivity]
@@ -40,8 +50,8 @@ def shot_detect(v_path, f_path, sensitivity):
     log_file = os.path.join(f_path, 'log.txt')
     with open(log_file, 'w') as f:
         f.write(str(p.stderr))
-    print('stderr: ', p.stderr, '\n')
-    print('stdout: ', p.stdout)
+    logger.debug('stderr: ', p.stderr, '\n')
+    logger.debug('stdout: ', p.stdout)
 
     check_shotdetection(os.path.join(f_path, 'result.xml'), p.stderr, p.stdout)
 
@@ -52,11 +62,11 @@ def main(features_root, sensitivity, videoids, force_run):
 
         # the script expects a fixed directory
         video_dir = os.path.join(features_root, videoid, 'media', videoid+'.mp4')
-        print('features_root: ', features_root)
-        print('videoid: ', videoid)
-        print('video_dir: ', video_dir)
+        logger.debug('features_root: ', features_root)
+        logger.debug('videoid: ', videoid)
+        logger.debug('video_dir: ', video_dir)
         features_dir = os.path.join(features_root, videoid, EXTRACTOR)
-        print('features_dir: ', features_dir)
+        logger.debug('features_dir: ', features_dir)
         if not os.path.isdir(features_dir):
             os.makedirs(features_dir)
 
@@ -65,7 +75,7 @@ def main(features_root, sensitivity, videoids, force_run):
         done_version = VERSION+'\n'+sensitivity
 
         if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version or force_run:
-            print('shot detection results missing or version did not match, detecting shots for video')
+            logger.info('shot detection results missing or version did not match, detecting shots for video')
 
             # create the folder for the shot-detection, delete the old folder to prevent issues with older versions
             if not os.path.isdir(features_dir):
