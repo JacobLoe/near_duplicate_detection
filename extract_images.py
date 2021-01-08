@@ -167,7 +167,7 @@ def main(features_root, file_extension, trim_frames, frame_width, videoids, forc
         previous_parameters = ''
         try:
             if STANDALONE:
-                with open(os.path.join(features_root, videoid, 'shotdetection', '.done')) as done_file:
+                with open(os.path.join(features_root, videoid, 'shotdetect', '.done')) as done_file:
                     for i, line in enumerate(done_file):
                         if not i == 0:  # exclude the version of the previous script
                             previous_parameters += line

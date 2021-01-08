@@ -4,13 +4,12 @@ import numpy as np
 from tqdm import tqdm
 import glob
 from PIL import Image
-from keras.applications.inception_resnet_v2 import InceptionResNetV2
-from keras.applications.inception_resnet_v2 import preprocess_input
-from keras.models import Model
+from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2, preprocess_input
+from tensorflow.keras.models import Model
 import shutil
 import logging
 
-VERSION = '20201215'      # the date the script was last changed
+VERSION = '20210107'      # the date the script was last changed
 EXTRACTOR = 'features'
 STANDALONE = True  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
@@ -35,7 +34,7 @@ def extract_features(model, frame):
 
 def load_model():
     model = InceptionResNetV2(weights='imagenet', input_shape=(299, 299, 3))
-    model = Model(inputs=model.input, output=model.get_layer('avg_pool').output)
+    model = Model(inputs=model.input, outputs=model.get_layer('avg_pool').output)
     return model
 
 
