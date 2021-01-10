@@ -32,7 +32,6 @@ inception_model = load_model()
 
 
 def update_index(features_root, video_index, force_run):
-
     logger.info('updating feature index')
     # get the path to all features the were extracted correctly
     feature_done_files = glob.glob(os.path.join(features_root, '**', 'features', '.done'), recursive=True)
@@ -100,10 +99,10 @@ def encode_image_in_base64(image):
 
 
 class RESTHandler(http.server.BaseHTTPRequestHandler):
-    def __init__(self, video_index, features, data, features_norm_sq, *args, **kwargs):
+    def __init__(self, video_index, features, video_data, features_norm_sq, *args, **kwargs):
         logger.debug("RESTHandler::__init__")
         self.video_index = video_index
-        self.data = data
+        self.data = video_data
         self.X = features
         self.X_norm_sq = features_norm_sq
         super().__init__(*args, **kwargs)
@@ -129,85 +128,94 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         else:
             post_data = urllib.parse.parse_qs(body)
 
-        logger.info('load target_image')
-        image_scale = 299
-        target_image = post_data['target_image']
-        target_image = Image.open(BytesIO(base64.b64decode(target_image)))
-        if post_data['remove_letterbox'] == 'True':
-            logger.info('removed letterbox in target image')
-            target_image, _ = trim(target_image, TRIM_THRESHOLD)
+        if not post_data['update_index']:
+            # calculate the nearest neighbours the target image
+            logger.info('load target_image')
+            image_scale = 299
+            target_image = post_data['target_image']
+            target_image = Image.open(BytesIO(base64.b64decode(target_image)))
+            if post_data['remove_letterbox'] == 'True':
+                logger.info('removed letterbox in target image')
+                target_image, _ = trim(target_image, TRIM_THRESHOLD)
 
-        trimmed_target_image = encode_image_in_base64(target_image)
+            trimmed_target_image = encode_image_in_base64(target_image)
 
-        target_image = target_image.resize((image_scale, image_scale))
-        target_image.save('target_image.png')
-        target_image = np.array(target_image)
-        logger.info('finished loading target image')
+            target_image = target_image.resize((image_scale, image_scale))
+            target_image.save('target_image.png')
+            target_image = np.array(target_image)
+            logger.info('finished loading target image')
 
-        logger.info('extract feature for target image')
-        target_feature = extract_features(inception_model, target_image)
-        logger.info('done')
+            logger.info('extract feature for target image')
+            target_feature = extract_features(inception_model, target_image)
+            logger.info('done')
 
-        # calculate the distance for all features
-        logger.info('calculating the distance for all features')
-        logger.debug(s.X.shape)
+            # calculate the distance for all features
+            logger.info('calculating the distance for all features')
+            logger.debug(s.X.shape)
 
-        A = np.dot(s.X, target_feature.T)
-        B = np.dot(target_feature, target_feature.T)
-        distances = s.X_norm_sq -2*A + B
-        logger.info('calculated all distances')
-        distances = np.reshape(distances, distances.shape[0])
-        logger.debug(distances.shape)
+            A = np.dot(s.X, target_feature.T)
+            B = np.dot(target_feature, target_feature.T)
+            distances = s.X_norm_sq -2*A + B
+            logger.info('calculated all distances')
+            distances = np.reshape(distances, distances.shape[0])
+            logger.debug(distances.shape)
 
-        # sort by distance, ascending
-        logger.info("sorting distances")
-        indices = np.argsort(distances).tolist()
-        lowest_distances = [(distances[i],
-                             s.data[i]['videoid'],
-                             s.data[i]['frame_timestamp'],
-                             encode_image_in_base64(Image.open(s.data[i]['image_path']))) for i in indices]
-        logger.info('distances are sorted')
+            # sort by distance, ascending
+            logger.info("sorting distances")
+            indices = np.argsort(distances).tolist()
+            lowest_distances = [(distances[i],
+                                 s.video_data[i]['videoid'],
+                                 s.video_data[i]['frame_timestamp'],
+                                 encode_image_in_base64(Image.open(s.video_data[i]['image_path']))) for i in indices]
+            logger.info('distances are sorted')
 
-        num_results = post_data['num_results']
-        filtered_distances = []
-        hits = 0    # hits is incremented whenever a distance is added to filtered_distances, if hits is higher than num_results
-        shot_hits = set()  # saves the name of the shots that have been added to filtered_distances
-        index = 0
+            num_results = post_data['num_results']
+            filtered_distances = []
+            hits = 0    # hits is incremented whenever a distance is added to filtered_distances, if hits is higher than num_results
+            shot_hits = set()  # saves the name of the shots that have been added to filtered_distances
+            index = 0
 
-        logger.info('filter distances')
-        while (hits < num_results) and (index < (len(lowest_distances)-1)):  # repeat filtering until num_results results are found or there are no distances in the list anymore
-            # if the current frame and the following frame are from the same video and the same shot, skip the current frame,
-            if (lowest_distances[index][2], lowest_distances[index][1]) in shot_hits:
-                index += 1
-            else:
-                shot_hits.add((lowest_distances[index][2], lowest_distances[index][1]))
-                filtered_distances.append(lowest_distances[index])
-                hits += 1
-                index += 1
-        logger.info('finished filtering')
+            logger.info('filter distances')
+            while (hits < num_results) and (index < (len(lowest_distances)-1)):  # repeat filtering until num_results results are found or there are no distances in the list anymore
+                # if the current frame and the following frame are from the same video and the same shot, skip the current frame,
+                if (lowest_distances[index][2], lowest_distances[index][1]) in shot_hits:
+                    index += 1
+                else:
+                    shot_hits.add((lowest_distances[index][2], lowest_distances[index][1]))
+                    filtered_distances.append(lowest_distances[index])
+                    hits += 1
+                    index += 1
+            logger.info('finished filtering')
 
-        concepts = []
-        concepts.extend([
-            {
-                 'distance': dis.tolist(),
-                 'source_video': sv,
-                 'frame_timestamp': str(datetime.timedelta(seconds=int(ft) / 1000)),
-                 'frame_bytes': fb
-            }
-            for dis, sv, ft, fb in filtered_distances]
-        )
+            concepts = []
+            concepts.extend([
+                {
+                     'distance': dis.tolist(),
+                     'source_video': sv,
+                     'frame_timestamp': str(datetime.timedelta(seconds=int(ft) / 1000)),
+                     'frame_bytes': fb
+                }
+                for dis, sv, ft, fb in filtered_distances]
+            )
 
-        s.send_response(200)
-        s.send_header("Content-type", "application/json")
-        s.end_headers()
-        response = json.dumps({
-            "status": 200,
-            "message": "OK",
-            "data": concepts,
-            "trimmed_target_image": trimmed_target_image
-        })
-        s.wfile.write(response.encode())
+            s.send_response(200)
+            s.send_header("Content-type", "application/json")
+            s.end_headers()
+            response = json.dumps({
+                "status": 200,
+                "message": "OK",
+                "data": concepts,
+                "trimmed_target_image": trimmed_target_image
+            })
+            s.wfile.write(response.encode())
+        else:
+            # update the index and the features
+            video_index, features, video_data = update_index(features_root='../static', video_index=s.video_index, force_run=post_data['force_run'])
 
+            s.video_index = video_index
+            s.video_data = video_data
+            s.X = features
+            s.X_norm_sq = (features ** 2).sum(axis=1).reshape(-1, 1)
 
 if __name__ == '__main__':
 

@@ -25,7 +25,7 @@ else:
 def write_html_str(results, target_image):
 
     # write to html
-    html_str = '<!DOCTYPE html><html lang="en"><table cellspacing="20"><tr><th>thumbnail</th><th>videofile</th><th>frame timestamp</th><th>shot_beginning</th><th>distance</th></tr>'
+    html_str = '<!DOCTYPE html><html lang="en"><table cellspacing="20"><tr><th>thumbnail</th><th>videofile</th><th>frame timestamp</th><th>distance</th></tr>'
     # add the target image to the html
     html_str += str('<tr><td><img src="data:image/jpg;base64,{}" width="480"></td></tr>'.format(target_image))
 
@@ -151,7 +151,8 @@ def upload_file():
             response = session.post(url, headers=headers, json={
                 'target_image': target_image,
                 'num_results': num_results,
-                'remove_letterbox': remove_letterbox
+                'remove_letterbox': remove_letterbox,
+                'update_index': False
             })
 
             output = response.json()
