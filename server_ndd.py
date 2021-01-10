@@ -219,8 +219,6 @@ if __name__ == '__main__':
 
     archive_features_norm_sq = (features**2).sum(axis=1).reshape(-1, 1)
 
-    print(video_data[0])
-
     handler = partial(RESTHandler, video_index, features, video_data, archive_features_norm_sq)
     server_class = http.server.HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), handler)
