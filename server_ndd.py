@@ -15,7 +15,6 @@ from PIL import Image
 from io import BytesIO
 import base64
 import numpy as np
-import pickle
 import argparse
 
 TRIM_THRESHOLD = 12
@@ -29,48 +28,55 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
 
-parser = argparse.ArgumentParser()
-# FIXME: this should be derived from the existing files matching the features found in rder to avoid problems:
-parser.add_argument("--file_extension", default='.jpeg', choices=('.jpeg', '.png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpg")
-args = parser.parse_args()
-
 inception_model = load_model()
 
 
-def get_features(features_path):
+def update_index(features_root, index, force_run):
 
-    logger.info('get features')
-    source_video = []
-    shot_begin_frame = []
-    frame_timestamp = []
-    frame_path = []
+    logger.info('updating feature index')
+    # get the path to all features the were extracted correctly
+    feature_done_files = glob.glob(os.path.join(features_root, '**', 'features', '.done'), recursive=True)
 
-    list_features_path = glob.glob(os.path.join(features_path, '**/*.npy'), recursive=True)
+    for fdf in feature_done_files:
+        videoid = os.path.split(os.path.split(os.path.split(fdf)[0])[0])[1]
+        done_file_version = open(fdf, 'r').read()
 
-    feature_list = []
-    for feature in tqdm(list_features_path, total=len(list_features_path)):
-        feature_list.append(np.load(feature)[0])  # create a list of features for the distance calculation
+        # get the file_extension of the images from the .done-file
+        file_extension = done_file_version.split()[1]
 
-        i_feature = os.path.split(feature)  # get the name and folder of the current feature
-        i_segment = os.path.split(i_feature[0])  # get the name and folder of the current segment
-        i_movie = os.path.split(os.path.split(i_segment[0])[0])   # get the id and the folder of the movie
+        # check if the features have already been indexed
+        if not videoid in index or not index[videoid] == done_file_version or force_run:
+            # index features: if there is no entry for the videoid
+            # if the version of the indexed features and the new features are different
+            # if the force_run flag has been set to true
 
-        # recreate the path to the image from the path to the feature
-        i_frame_path = os.path.join(i_movie[0], i_movie[1], 'frames', i_segment[1], i_feature[1][:-4]+args.file_extension)  # the path to the image corresponding to the feature
+            # retrieve the path to images
+            ip = os.path.join(os.path.split(os.path.split(fdf)[0])[0], 'frames/*{file_extension}'.format(file_extension=file_extension))
+            images_path = glob.glob(ip, recursive=True)
 
-        # add information for the frame
-        video_rel_path = os.path.join(i_movie[0], i_movie[1], 'media', i_movie[1]+'.mp4')
-        video_name = os.path.basename(video_rel_path)[:-4]
+            # retrieve the paths to the features and load them with numpy
+            fp = os.path.join(os.path.split(fdf)[0], '*.npy')
+            features_path = glob.glob(fp, recursive=True)
 
-        source_video.append(video_name[:8])  # save the first eight chars of the id as the name of the source video
-        shot_begin_frame.append(i_segment[1])  # save the beginning timestamp of the shot the feature is from
-        frame_timestamp.append(i_feature[1][:-4])  # save the specific timestamp the feature is at
-        frame_path.append(i_frame_path)  # save the path of the feature
+            video_data = [[np.load(f)[0], images_path[i], videoid, done_file_version] for i, f in enumerate(features_path)]
+            # FIXME index is missing the name of the video (can maybe be retrieved from ada.filmontology)
+            # FIXME there is no info about from which shot a feature is
+            index[videoid] = {'version': done_file_version, 'data': video_data}
+        else:
+            # if
+            # features are already in the index
+            pass
 
-    features = np.asarray(feature_list)
-    info = {'source_video': source_video, 'shot_begin_frame': shot_begin_frame, 'frame_timestamp': frame_timestamp, 'frame_path': frame_path}
-    logger.info('done')
-    return features, info
+    # create a numpy array of the data (features, paths ...) from the index
+    # this makes the features sortable, while keeping the videoid, ...
+    # delete the data from the to save space
+    data = []
+    for key in index:
+        d = index[key].pop('data', None)
+        data = [*data, *d]
+    data = np.array(data)
+
+    return index, data
 
 
 def encode_image_in_base64(image):
@@ -84,9 +90,10 @@ def encode_image_in_base64(image):
 
 
 class RESTHandler(http.server.BaseHTTPRequestHandler):
-    def __init__(self, features, features_norm_sq, *args, **kwargs):
+    def __init__(self, index, features_norm_sq, *args, **kwargs):
         logger.debug("RESTHandler::__init__")
-        self.X = features
+        self.index = index
+        self.X = index['features']
         self.X_norm_sq = features_norm_sq
         super().__init__(*args, **kwargs)
 
@@ -194,27 +201,20 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    pickle_features = 'features_pickle/features.pickle'
-    if os.path.isfile(pickle_features):
-        logger.info('load pickled features')
-        with open(pickle_features, 'rb') as handle:
-            features_server, info_server = pickle.load(handle)
-        logger.info('done')
-    else:
-        features_server, info_server = get_features('static')
-        logger.info('save features with pickle')
-        if not os.path.isdir('features_pickle'):
-            os.makedirs('features_pickle')
-        with open(pickle_features, 'wb') as handle:
-            pickle.dump([features_server, info_server], handle)
-        logger.info('done')
+
+    index = {}
+    index, features = update_index(features_root='../static', index=index, force_run=False)
 
     HOST_NAME = ''
     PORT_NUMBER = 9000
-    
-    archive_features_norm_sq = (features_server**2).sum(axis=1).reshape(-1,1)
 
-    handler = partial(RESTHandler, features_server, archive_features_norm_sq)
+    p = list(features[:, 0])
+
+    print(np.shape(p))
+
+    archive_features_norm_sq = (p**2).sum(axis=1).reshape(-1, 1)
+
+    handler = partial(RESTHandler, index, archive_features_norm_sq)
     server_class = http.server.HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), handler)
     logger.info("Starting dummy REST server on %s:%d", HOST_NAME, PORT_NUMBER)

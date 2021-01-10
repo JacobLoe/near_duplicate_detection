@@ -1,5 +1,5 @@
 # build
-docker build -f Dockerfile_shot_detection -t jacobloe/shot_detection:0.1 .
+docker build -f Dockerfile_shot_detection -t jacobloe/shotdetect:0.1 .
 docker build -f Dockerfile_extract_images -t jacobloe/extract_images:0.1 .
 docker build -f Dockerfile_extract_aspect_ratio -t jacobloe/extract_aspect_ratio:0.1 .
 docker build -f Dockerfile_extract_features -t jacobloe/extract_features:0.1 .
@@ -9,7 +9,7 @@ docker build -f Dockerfile_client_flask -t jacobloe/client_flask:0.1 .
 ######################################################################################################################################
 
 # the features_path needs the static in the beginning to work with flask
-docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/data jacobloe/shot_detection:0.1 /data videoid
+docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/data jacobloe/shotdetect:0.1 /data videoid
 
 # parameters:
 # --trim_frames choices: yes/no default: no             decide whether to remove or keep black borders in the movies
@@ -23,7 +23,7 @@ docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_F
 
 # parameters:
 # --file_extension choices: .jpeg/.png default: .jpeg     use the extension in which the frames were saved
-docker run --rm -it -v $(pwd)PATH_TO_VIDEOS:/video:ro -v $(pwd)/static/PATH_TO_FEATURES:/data -v /home/.keras/:/root/.keras jacobloe/extract_features:0.1 /data/ /video/file_mappings.tsv
+docker run --rm -it -v $(pwd)/static/PATH_TO_FEATURES:/data -v /home/.keras/:/root/.keras jacobloe/extract_features:0.1 /data/
 
 ######################################################################################################################################
 
@@ -32,9 +32,8 @@ docker network create --driver bridge ndd_subnet
 
 #docker server_ndd.py
 # --entrypoint /bin/bash
-#
 # --file_extension choices: .jpeg/.png default: .jpeg     use the extension in which the frames were saved
-docker run --rm -it -v $(pwd)/static/:/root/static -v /home/.keras/:/root/.keras -v $(pwd)/features_pickle/:/root/features_pickle/ -p 9000:9000 --network ndd_subnet --name server_ndd jacobloe/server_ndd:0.1
+docker run --rm -it -v $(pwd)/../static/:/root/static -v /home/.keras/:/root/.keras -p 9000:9000 --network ndd_subnet --name server_ndd jacobloe/server_ndd:0.1
 
 #docker client_flask.py
 # :8000 has to be added to the adress in the browser,flask omits it
