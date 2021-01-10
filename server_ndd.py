@@ -31,13 +31,13 @@ logger.propagate = False    # prevent log messages from appearing twice
 inception_model = load_model()
 
 
-def update_index(features_root, index, force_run):
+def update_index(features_root, video_index, force_run):
 
     logger.info('updating feature index')
     # get the path to all features the were extracted correctly
     feature_done_files = glob.glob(os.path.join(features_root, '**', 'features', '.done'), recursive=True)
 
-    for fdf in feature_done_files:
+    for fdf in tqdm(feature_done_files):
         videoid = os.path.split(os.path.split(os.path.split(fdf)[0])[0])[1]
         done_file_version = open(fdf, 'r').read()
 
@@ -45,7 +45,7 @@ def update_index(features_root, index, force_run):
         file_extension = done_file_version.split()[1]
 
         # check if the features have already been indexed
-        if not videoid in index or not index[videoid] == done_file_version or force_run:
+        if not videoid in video_index or not video_index[videoid]['version'] == done_file_version or force_run:
             # index features: if there is no entry for the videoid
             # if the version of the indexed features and the new features are different
             # if the force_run flag has been set to true
@@ -58,10 +58,17 @@ def update_index(features_root, index, force_run):
             fp = os.path.join(os.path.split(fdf)[0], '*.npy')
             features_path = glob.glob(fp, recursive=True)
 
-            video_data = [[np.load(f)[0], images_path[i], videoid, done_file_version] for i, f in enumerate(features_path)]
+            # video_data = [[list(np.load(f)[0]), images_path[i], videoid, done_file_version] for i, f in enumerate(features_path)]
+            features = []
+            video_data = []
+            for i, f in enumerate(features_path):
+                features.append(np.load(f)[0])
+                frame_timestamp = os.path.split(images_path[i])[1][:-len(file_extension)]
+                video_data.append({'image_path': images_path[i], 'frame_timestamp': frame_timestamp, 'videoid': videoid, 'version': done_file_version})
+
             # FIXME index is missing the name of the video (can maybe be retrieved from ada.filmontology)
             # FIXME there is no info about from which shot a feature is
-            index[videoid] = {'version': done_file_version, 'data': video_data}
+            video_index[videoid] = {'version': done_file_version, 'features': features, 'data': video_data}
         else:
             # if
             # features are already in the index
@@ -70,13 +77,16 @@ def update_index(features_root, index, force_run):
     # create a numpy array of the data (features, paths ...) from the index
     # this makes the features sortable, while keeping the videoid, ...
     # delete the data from the to save space
-    data = []
-    for key in index:
-        d = index[key].pop('data', None)
-        data = [*data, *d]
-    data = np.array(data)
+    features = []
+    video_data = []
+    for key in video_index:
+        f = video_index[key].pop('features', None)
+        d = video_index[key].pop('data', None)
+        features = [*features, *f]
+        video_data = [*video_data, *d]
+    features = np.asarray(features)
 
-    return index, data
+    return video_index, features, video_data
 
 
 def encode_image_in_base64(image):
@@ -90,10 +100,11 @@ def encode_image_in_base64(image):
 
 
 class RESTHandler(http.server.BaseHTTPRequestHandler):
-    def __init__(self, index, features_norm_sq, *args, **kwargs):
+    def __init__(self, video_index, features, data, features_norm_sq, *args, **kwargs):
         logger.debug("RESTHandler::__init__")
-        self.index = index
-        self.X = index['features']
+        self.video_index = video_index
+        self.data = data
+        self.X = features
         self.X_norm_sq = features_norm_sq
         super().__init__(*args, **kwargs)
 
@@ -142,7 +153,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         logger.debug(s.X.shape)
 
         A = np.dot(s.X, target_feature.T)
-        B = np.dot(target_feature,target_feature.T)
+        B = np.dot(target_feature, target_feature.T)
         distances = s.X_norm_sq -2*A + B
         logger.info('calculated all distances')
         distances = np.reshape(distances, distances.shape[0])
@@ -152,10 +163,9 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         logger.info("sorting distances")
         indices = np.argsort(distances).tolist()
         lowest_distances = [(distances[i],
-                             info_server['source_video'][i],
-                             info_server['shot_begin_frame'][i],
-                             info_server['frame_timestamp'][i],
-                             encode_image_in_base64(Image.open(info_server['frame_bytes'][i]))) for i in indices]
+                             s.data[i]['videoid'],
+                             s.data[i]['frame_timestamp'],
+                             encode_image_in_base64(Image.open(s.data[i]['image_path']))) for i in indices]
         logger.info('distances are sorted')
 
         num_results = post_data['num_results']
@@ -181,11 +191,10 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             {
                  'distance': dis.tolist(),
                  'source_video': sv,
-                 'shot_begin_frame': str(datetime.timedelta(seconds=int(sbf) / 1000)),
                  'frame_timestamp': str(datetime.timedelta(seconds=int(ft) / 1000)),
-                 'frame_path': fp
+                 'frame_bytes': fb
             }
-            for dis, sv, sbf, ft, fp in filtered_distances]
+            for dis, sv, ft, fb in filtered_distances]
         )
 
         s.send_response(200)
@@ -202,19 +211,17 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
 
-    index = {}
-    index, features = update_index(features_root='../static', index=index, force_run=False)
+    video_index = {}
+    video_index, features, video_data = update_index(features_root='../static', video_index=video_index, force_run=False)
 
     HOST_NAME = ''
     PORT_NUMBER = 9000
 
-    p = list(features[:, 0])
+    archive_features_norm_sq = (features**2).sum(axis=1).reshape(-1, 1)
 
-    print(np.shape(p))
+    print(video_data[0])
 
-    archive_features_norm_sq = (p**2).sum(axis=1).reshape(-1, 1)
-
-    handler = partial(RESTHandler, index, archive_features_norm_sq)
+    handler = partial(RESTHandler, video_index, features, video_data, archive_features_norm_sq)
     server_class = http.server.HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), handler)
     logger.info("Starting dummy REST server on %s:%d", HOST_NAME, PORT_NUMBER)

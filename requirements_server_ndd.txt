@@ -1,5 +1,5 @@
 opencv-python==4.2.0.32
-numpy==1.18.5
+numpy==1.19.2
 tqdm==4.43.0
 datetime==4.3
 tensorflow==2.4.0

@@ -33,7 +33,7 @@ docker network create --driver bridge ndd_subnet
 #docker server_ndd.py
 # --entrypoint /bin/bash
 # --file_extension choices: .jpeg/.png default: .jpeg     use the extension in which the frames were saved
-docker run --rm -it -v $(pwd)/../static/:/root/static -v /home/.keras/:/root/.keras -p 9000:9000 --network ndd_subnet --name server_ndd jacobloe/server_ndd:0.1
+docker run --rm -it -v $(pwd)/../static/:/static -p 9000:9000 --network ndd_subnet --name server_ndd jacobloe/server_ndd:0.1
 
 #docker client_flask.py
 # :8000 has to be added to the adress in the browser,flask omits it
