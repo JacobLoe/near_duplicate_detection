@@ -243,7 +243,7 @@ def main(features_root, file_extension, trim_frames, frame_width, videoids, forc
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("features_dir", help="the directory where the images are to be stored")
+    parser.add_argument("features_root", help="the directory where the images are to be stored")
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
     parser.add_argument("--trim_frames", default='no', choices=('yes', 'no'), help="decide whether to remove or keep black borders in the movies")
     parser.add_argument("--frame_width", type=int, default=299, help="set the width at which the frames are saved")
@@ -251,6 +251,4 @@ if __name__ == "__main__":
     parser.add_argument("--force_run", default='False', help='sets whether the script runs regardless of the version of .done-files')
     args = parser.parse_args()
 
-    force_run = args.force_run
-
-    main(args.features_dir, args.file_extension, args.trim_frames, args.frame_width, args.videoids, args.force_run)
+    main(args.features_root, args.file_extension, args.trim_frames, args.frame_width, args.videoids, args.force_run)

@@ -95,10 +95,10 @@ def main(features_root, sensitivity, videoids, force_run):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("features_dir", help="the directory where the images are to be stored")
+    parser.add_argument("features_root", help="the directory where the images are to be stored")
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
     parser.add_argument('--sensitivity', default='60', help='sets the sensitivity of the shot_detection, expects an integer ,default value is 60')
     parser.add_argument("--force_run", default='False', help='sets whether the script runs regardless of the version of .done-files')
     args = parser.parse_args()
 
-    main(args.features_dir, args.sensitivity, args.videoids, args.force_run)
+    main(args.features_root, args.sensitivity, args.videoids, args.force_run)

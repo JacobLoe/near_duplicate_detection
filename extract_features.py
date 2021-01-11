@@ -104,10 +104,10 @@ def main(features_root, file_extension, videoids, force_run):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("features_dir", help="the directory where the feature-vectors are to be stored, for example 'features'")
+    parser.add_argument("features_root", help="the directory where the feature-vectors are to be stored, for example 'features'")
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
     parser.add_argument("--file_extension", default='.jpeg', choices=('.jpeg', '.png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpeg")
     parser.add_argument("--force_run", default='False', help='sets whether the script runs regardless of the version of .done-files')
     args = parser.parse_args()
 
-    main(args.features_dir, args.file_extension, args.videoids, args.force_run)
+    main(args.features_root, args.file_extension, args.videoids, args.force_run)
