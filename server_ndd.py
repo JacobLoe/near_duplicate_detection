@@ -16,6 +16,8 @@ from io import BytesIO
 import base64
 import numpy as np
 import argparse
+import xml.etree.ElementTree as ET
+
 
 TRIM_THRESHOLD = 12
 
@@ -29,6 +31,18 @@ logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
 
 inception_model = load_model()
+
+
+def read_shotdetect_xml(path):
+    tree = ET.parse(path)
+    root = tree.getroot().findall('content')
+    timestamps = []
+    for child in root[0].iter():
+        if child.tag == 'shot':
+            attribs = child.attrib
+
+            timestamps.append((int(attribs['msbegin']), int(attribs['msbegin']) + int(attribs['msduration']) - 1))
+    return timestamps
 
 
 def update_index(features_root, video_index, force_run):
@@ -57,16 +71,24 @@ def update_index(features_root, video_index, force_run):
             fp = os.path.join(os.path.split(fdf)[0], '*.npy')
             features_path = glob.glob(fp, recursive=True)
 
+            # read the shotdetect results to map frames to shots
+            shotdetect_path = os.path.join(features_root, videoid, 'shotdetect/result.xml')
+            shot_timestamps = read_shotdetect_xml(shotdetect_path)
+
             # video_data = [[list(np.load(f)[0]), images_path[i], videoid, done_file_version] for i, f in enumerate(features_path)]
             features = []
             video_data = []
             for i, f in enumerate(features_path):
                 features.append(np.load(f)[0])
                 frame_timestamp = os.path.split(images_path[i])[1][:-len(file_extension)]
-                video_data.append({'image_path': images_path[i], 'frame_timestamp': frame_timestamp, 'videoid': videoid, 'version': done_file_version})
+
+                for ts in shot_timestamps:
+                    if ts[0] < int(frame_timestamp) < ts[1]:
+                        shot_begin_timestamp = ts[0]
+
+                video_data.append({'image_path': images_path[i], 'frame_timestamp': frame_timestamp, 'shot_begin_timestamp': shot_begin_timestamp, 'videoid': videoid, 'version': done_file_version})
 
             # FIXME index is missing the name of the video (can maybe be retrieved from ada.filmontology)
-            # FIXME there is no info about from which shot a feature is
             video_index[videoid] = {'version': done_file_version, 'features': features, 'data': video_data}
         else:
             # if
@@ -166,37 +188,40 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             indices = np.argsort(distances).tolist()
             lowest_distances = [(distances[i],
                                  s.video_data[i]['videoid'],
+                                 s.video_data[i]['shot_begin_timestamp'],
                                  s.video_data[i]['frame_timestamp'],
                                  encode_image_in_base64(Image.open(s.video_data[i]['image_path']))) for i in indices]
             logger.info('distances are sorted')
 
+            # filter the distance such that only num_results are shown and each shot in a video appears only once
             num_results = post_data['num_results']
             filtered_distances = []
             hits = 0    # hits is incremented whenever a distance is added to filtered_distances, if hits is higher than num_results
-            shot_hits = set()  # saves the name of the shots that have been added to filtered_distances
-            index = 0
+            shot_hits = set()  # saves the shot timestamp and the name of the video for the first num_results distances
+            i = 0
 
             logger.info('filter distances')
-            while (hits < num_results) and (index < (len(lowest_distances)-1)):  # repeat filtering until num_results results are found or there are no distances in the list anymore
+            while (hits < num_results) and (i < (len(lowest_distances)-1)):  # repeat filtering until num_results results are found or there are no distances in the list anymore
                 # if the current frame and the following frame are from the same video and the same shot, skip the current frame,
-                if (lowest_distances[index][2], lowest_distances[index][1]) in shot_hits:
-                    index += 1
+                if (lowest_distances[i][2], lowest_distances[i][1]) in shot_hits:
+                    i += 1
                 else:
-                    shot_hits.add((lowest_distances[index][2], lowest_distances[index][1]))
-                    filtered_distances.append(lowest_distances[index])
+                    shot_hits.add((lowest_distances[i][2], lowest_distances[i][1]))
+                    filtered_distances.append(lowest_distances[i])
                     hits += 1
-                    index += 1
+                    i += 1
             logger.info('finished filtering')
 
             concepts = []
             concepts.extend([
                 {
-                     'distance': dis.tolist(),
-                     'source_video': sv,
-                     'frame_timestamp': str(datetime.timedelta(seconds=int(ft) / 1000)),
-                     'frame_bytes': fb
+                    'distance': dis.tolist(),
+                    'source_video': sv,
+                    'frame_timestamp': str(datetime.timedelta(seconds=int(ft) / 1000)),
+                    'shot_begin_timestamp': str(datetime.timedelta(seconds=int(sbt) / 1000)),
+                    'frame_bytes': fb
                 }
-                for dis, sv, ft, fb in filtered_distances]
+                for dis, sv, ft, sbt, fb in filtered_distances]
             )
 
             s.send_response(200)
