@@ -178,7 +178,7 @@ def main(features_root, file_extension, trim_frames, frame_width, videoids, forc
         # create the version for a run, based on the script version and the used parameters
         done_version = VERSION+'\n'+file_extension+'\n'+trim_frames+'\n'+str(frame_width)+'\n'+str(TRIM_THRESHOLD)+'\n'+str(IMAGE_QUALITY)+'\n'+previous_parameters
 
-        if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version or force_run:
+        if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version or force_run == 'True':
             logger.info('image extraction results missing or version did not match, extracting images for')
 
             # create the folder for the frames, delete the old folder to prevent issues with older versions
@@ -248,7 +248,7 @@ if __name__ == "__main__":
     parser.add_argument("--trim_frames", default='no', choices=('yes', 'no'), help="decide whether to remove or keep black borders in the movies")
     parser.add_argument("--frame_width", type=int, default=299, help="set the width at which the frames are saved")
     parser.add_argument("--file_extension", default='.jpeg', choices=('.jpeg', '.png'), help="define the file-extension of the frames, only .png and .jpg are supported, default is .jpeg")
-    parser.add_argument("--force_run", default=False, type=bool, help='sets whether the script runs regardless of the version of .done-files')
+    parser.add_argument("--force_run", default='False', help='sets whether the script runs regardless of the version of .done-files')
     args = parser.parse_args()
 
     force_run = args.force_run

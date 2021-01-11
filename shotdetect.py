@@ -36,7 +36,7 @@ def check_shotdetection(xml_path, stderr, stdout):
                         'Shotdetection output: {stdout}'.format(stderr=stderr, stdout=stdout))
 
 
-def shot_detect(v_path, f_path, sensitivity):
+def shotdetect(v_path, f_path, sensitivity):
     logger.debug('v_path', v_path)
     keywords = ['-i', v_path,
                 '-o', f_path,
@@ -74,7 +74,7 @@ def main(features_root, sensitivity, videoids, force_run):
         done_file_path = os.path.join(features_dir, '.done')
         done_version = VERSION+'\n'+sensitivity
 
-        if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version or force_run:
+        if not os.path.isfile(done_file_path) or not open(done_file_path, 'r').read() == done_version or force_run == 'True':
             logger.info('shot detection results missing or version did not match, detecting shots for video')
 
             # create the folder for the shot-detection, delete the old folder to prevent issues with older versions
@@ -84,7 +84,7 @@ def main(features_root, sensitivity, videoids, force_run):
                 shutil.rmtree(features_dir)
                 os.makedirs(features_dir)
 
-            shot_detect(video_dir, features_dir, sensitivity)
+            shotdetect(video_dir, features_dir, sensitivity)
 
             # create a hidden file to signal that the asr for a movie is done
             # write the current version of the script in the file
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     parser.add_argument("features_dir", help="the directory where the images are to be stored")
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
     parser.add_argument('--sensitivity', default='60', help='sets the sensitivity of the shot_detection, expects an integer ,default value is 60')
-    parser.add_argument("--force_run", default=False, type=bool, help='sets whether the script runs regardless of the version of .done-files')
+    parser.add_argument("--force_run", default='False', help='sets whether the script runs regardless of the version of .done-files')
     args = parser.parse_args()
 
     main(args.features_dir, args.sensitivity, args.videoids, args.force_run)
