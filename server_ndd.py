@@ -17,6 +17,7 @@ import base64
 import numpy as np
 import argparse
 import xml.etree.ElementTree as ET
+import requests
 
 
 TRIM_THRESHOLD = 12
@@ -63,6 +64,17 @@ def update_index(features_root, video_index, force_run):
             # if the version of the indexed features and the new features are different
             # if the force_run flag has been set to true
 
+            # get the name of the video from ada the server
+            try:
+                media_base_url = "http://ada.filmontology.org/api_dev/media/"
+                r = requests.get(media_base_url + videoid)
+                if r.status_code == 200:
+                    data = r.json()
+                    video_url = data.get('videourl')
+                    videoname = os.path.split(video_url)[1][:-4]
+            except:
+                videoname = videoid
+
             # retrieve the path to images
             ip = os.path.join(os.path.split(os.path.split(fdf)[0])[0], 'frames/*{file_extension}'.format(file_extension=file_extension))
             images_path = glob.glob(ip, recursive=True)
@@ -86,18 +98,18 @@ def update_index(features_root, video_index, force_run):
                     if ts[0] < int(frame_timestamp) < ts[1]:
                         shot_begin_timestamp = ts[0]
 
-                video_data.append({'image_path': images_path[i], 'frame_timestamp': frame_timestamp, 'shot_begin_timestamp': shot_begin_timestamp, 'videoid': videoid, 'version': done_file_version})
+                video_data.append({'image_path': images_path[i], 'frame_timestamp': frame_timestamp, 'shot_begin_timestamp': shot_begin_timestamp, 'videoname': videoname,'videoid': videoid, 'version': done_file_version})
 
-            # FIXME index is missing the name of the video (can maybe be retrieved from ada.filmontology)
             video_index[videoid] = {'version': done_file_version, 'features': features, 'data': video_data}
         else:
             # if
             # features are already in the index
             pass
 
+    print(asdasd)
     # create a numpy array of the data (features, paths ...) from the index
     # this makes the features sortable, while keeping the videoid, ...
-    # delete the data from the to save space
+    # delete the data (except the version) from the index to save space
     features = []
     video_data = []
     for key in video_index:
@@ -185,7 +197,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
             # sort by distance, ascending
             logger.info("sorting distances")
-            indices = np.argsort(distances).tolist()
+            indices = np.argsort(distances).tolist()    # returns the indices of the sorted distances
             lowest_distances = [(distances[i],
                                  s.video_data[i]['videoid'],
                                  s.video_data[i]['shot_begin_timestamp'],
