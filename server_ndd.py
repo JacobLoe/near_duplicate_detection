@@ -99,12 +99,13 @@ def encode_image_in_base64(image):
 
 
 class RESTHandler(http.server.BaseHTTPRequestHandler):
-    def __init__(self, video_index, features, video_data, features_norm_sq, *args, **kwargs):
+    def __init__(self, video_index, features, video_data, features_norm_sq, features_root, *args, **kwargs):
         logger.debug("RESTHandler::__init__")
         self.video_index = video_index
-        self.data = video_data
+        self.video_data = video_data
         self.X = features
         self.X_norm_sq = features_norm_sq
+        self.features_root = features_root
         super().__init__(*args, **kwargs)
 
     def do_HEAD(s):
@@ -210,24 +211,29 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             s.wfile.write(response.encode())
         else:
             # update the index and the features
-            video_index, features, video_data = update_index(features_root='../static', video_index=s.video_index, force_run=post_data['force_run'])
+            video_index, features, video_data = update_index(features_root=s.features_root, video_index=s.video_index, force_run=post_data['force_run'])
 
             s.video_index = video_index
             s.video_data = video_data
             s.X = features
             s.X_norm_sq = (features ** 2).sum(axis=1).reshape(-1, 1)
 
+
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("features_root", help="the directory where the images are to be stored")
+    args = parser.parse_args()
+
     video_index = {}
-    video_index, features, video_data = update_index(features_root='../static', video_index=video_index, force_run=False)
+    video_index, features, video_data = update_index(features_root=args.features_root, video_index=video_index, force_run=False)
 
     HOST_NAME = ''
     PORT_NUMBER = 9000
 
     archive_features_norm_sq = (features**2).sum(axis=1).reshape(-1, 1)
 
-    handler = partial(RESTHandler, video_index, features, video_data, archive_features_norm_sq)
+    handler = partial(RESTHandler, video_index, features, video_data, archive_features_norm_sq, args.features_root)
     server_class = http.server.HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), handler)
     logger.info("Starting dummy REST server on %s:%d", HOST_NAME, PORT_NUMBER)
