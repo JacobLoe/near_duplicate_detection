@@ -46,12 +46,13 @@ def read_shotdetect_xml(path):
     return timestamps
 
 
-def update_index(features_root, video_index, force_run):
+def update_index(features_root, video_index, features, video_data, force_run):
     logger.info('updating feature index')
     # get the path to all features the were extracted correctly
     feature_done_files = glob.glob(os.path.join(features_root, '**', 'features', '.done'), recursive=True)
 
     for fdf in tqdm(feature_done_files):
+        # as the videoid is taken from the feature_done_file path
         videoid = os.path.split(os.path.split(os.path.split(fdf)[0])[0])[1]
         done_file_version = open(fdf, 'r').read()
 
@@ -87,40 +88,57 @@ def update_index(features_root, video_index, force_run):
             shotdetect_path = os.path.join(features_root, videoid, 'shotdetect/result.xml')
             shot_timestamps = read_shotdetect_xml(shotdetect_path)
 
-            # video_data = [[list(np.load(f)[0]), images_path[i], videoid, done_file_version] for i, f in enumerate(features_path)]
-            features = []
-            video_data = []
+            aux_features = []
+            aux_video_data = []
             for i, f in enumerate(features_path):
-                features.append(np.load(f)[0])
+                aux_features.append(np.load(f)[0])
                 frame_timestamp = os.path.split(images_path[i])[1][:-len(file_extension)]
 
                 for ts in shot_timestamps:
                     if ts[0] < int(frame_timestamp) < ts[1]:
                         shot_begin_timestamp = ts[0]
 
-                video_data.append({'image_path': images_path[i], 'frame_timestamp': frame_timestamp, 'shot_begin_timestamp': shot_begin_timestamp, 'videoname': videoname,'videoid': videoid, 'version': done_file_version})
+                aux_video_data.append({'image_path': images_path[i], 'frame_timestamp': frame_timestamp,
+                                       'shot_begin_timestamp': shot_begin_timestamp, 'videoname': videoname,
+                                       'videoid': videoid, 'version': done_file_version})
 
-            video_index[videoid] = {'version': done_file_version, 'features': features, 'data': video_data}
+            video_index[videoid] = {'version': done_file_version, 'features': aux_features, 'video_data': aux_video_data}
         else:
-            # if
-            # features are already in the index
-            pass
+            # if features were already indexed return them from the "features" list to the index dict
 
-    print(asdasd)
+            # in the video_data search for the data and corresponding index for the current videoid
+            ivd = [[i, vd] for i, vd in enumerate(video_data) if vd['videoid'] == videoid]
+
+            # fill the video_index in the same way as in the upper if condition
+            video_index[videoid]['video_data'] = []
+            video_index[videoid]['features'] = []
+            for i, vd in ivd:
+                video_index[videoid]['video_data'].append(vd)
+                video_index[videoid]['features'].append(features[i])
+
     # create a numpy array of the data (features, paths ...) from the index
     # this makes the features sortable, while keeping the videoid, ...
     # delete the data (except the version) from the index to save space
     features = []
     video_data = []
+    videos_with_no_features = []
     for key in video_index:
-        f = video_index[key].pop('features', None)
-        d = video_index[key].pop('data', None)
-        features = [*features, *f]
-        video_data = [*video_data, *d]
+        # if features were removed in between two updates (meaning they are in the "features"  list but the features don't exist on the disk)
+        # remember the key and remove them later from dict
+        if not 'features' in video_index[key]:
+            videos_with_no_features.append(key)
+        else:
+            f = video_index[key].pop('features', None)
+            d = video_index[key].pop('video_data', None)
+            features = [*features, *f]
+            video_data = [*video_data, *d]
     features = np.asarray(features)
 
-    return video_index, features, video_data
+    # remove unneeded keys
+    for key in videos_with_no_features:
+        del video_index[key]
 
+    return video_index, features, video_data
 
 def encode_image_in_base64(image):
 
@@ -135,10 +153,10 @@ def encode_image_in_base64(image):
 class RESTHandler(http.server.BaseHTTPRequestHandler):
     def __init__(self, video_index, features, video_data, features_norm_sq, features_root, *args, **kwargs):
         logger.debug("RESTHandler::__init__")
-        self.video_index = video_index
-        self.video_data = video_data
-        self.X = features
-        self.X_norm_sq = features_norm_sq
+        RESTHandler.video_index = video_index
+        RESTHandler.video_data = video_data
+        RESTHandler.X = features
+        RESTHandler.X_norm_sq = features_norm_sq
         self.features_root = features_root
         super().__init__(*args, **kwargs)
 
@@ -255,6 +273,15 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             s.X = features
             s.X_norm_sq = (features ** 2).sum(axis=1).reshape(-1, 1)
 
+            s.send_response(200)
+            s.send_header("Content-type", "application/json")
+            s.end_headers()
+            response = json.dumps({
+                "status": 200,
+                "message": "OK"
+            })
+            s.wfile.write(response.encode())
+
 
 if __name__ == '__main__':
 
@@ -263,7 +290,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     video_index = {}
-    video_index, features, video_data = update_index(features_root=args.features_root, video_index=video_index, force_run=False)
+    features = []
+    video_data = []
+    video_index, features, video_data = update_index(features_root=args.features_root,
+                                                     video_index=video_index,
+                                                     features=features,
+                                                     video_data=video_data,
+                                                     force_run=False)
 
     HOST_NAME = ''
     PORT_NUMBER = 9000
