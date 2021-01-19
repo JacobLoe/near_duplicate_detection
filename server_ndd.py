@@ -60,7 +60,7 @@ def update_index(features_root, video_index, features, video_data, force_run):
         file_extension = done_file_version.split()[1]
 
         # check if the features have already been indexed
-        if not videoid in video_index or not video_index[videoid]['version'] == done_file_version or force_run:
+        if not videoid in video_index or not video_index[videoid]['version'] == done_file_version or force_run == 'True':
             # index features: if there is no entry for the videoid
             # if the version of the indexed features and the new features are different
             # if the force_run flag has been set to true
@@ -153,10 +153,10 @@ def encode_image_in_base64(image):
 class RESTHandler(http.server.BaseHTTPRequestHandler):
     def __init__(self, video_index, features, video_data, features_norm_sq, features_root, *args, **kwargs):
         logger.debug("RESTHandler::__init__")
-        RESTHandler.video_index = video_index
-        RESTHandler.video_data = video_data
-        RESTHandler.X = features
-        RESTHandler.X_norm_sq = features_norm_sq
+        self.video_index = video_index
+        self.video_data = video_data
+        self.X = features
+        self.X_norm_sq = features_norm_sq
         self.features_root = features_root
         super().__init__(*args, **kwargs)
 
@@ -266,7 +266,11 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             s.wfile.write(response.encode())
         else:
             # update the index and the features
-            video_index, features, video_data = update_index(features_root=s.features_root, video_index=s.video_index, force_run=post_data['force_run'])
+            video_index, features, video_data = update_index(features_root=s.features_root,
+                                                             video_index=s.video_index,
+                                                             features=s.X,
+                                                             video_data=s.video_data,
+                                                             force_run=post_data['force_run'])
 
             s.video_index = video_index
             s.video_data = video_data
