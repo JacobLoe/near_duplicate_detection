@@ -33,7 +33,8 @@ docker network create --driver bridge ndd_subnet
 #docker server_ndd.py
 # --entrypoint /bin/bash
 # --file_extension choices: .jpeg/.png default: .jpeg     use the extension in which the frames were saved
-docker run --rm -it -v $(pwd)/../data/:/data -p 9000:9000 --network ndd_subnet -v /home/.keras_ndd/:/root/.keras --name server_ndd jacobloe/server_ndd:0.1 /data
+# docker volume create --driver local --opt type=none --opt device=/home/jacob/Downloads/hpi/data --opt o=bind airflow_cache
+docker run --rm -it -v airflow_cache:/data -p 9000:9000 --network ndd_subnet -v /home/.keras_ndd/:/root/.keras --name server_ndd jacobloe/server_ndd:0.1 /data
 
 #docker client_flask.py
 # :8000 has to be added to the adress in the browser,flask omits it
