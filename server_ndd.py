@@ -160,23 +160,23 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         self.features_root = features_root
         super().__init__(*args, **kwargs)
 
-    def do_HEAD(s):
-        s.send_response(200)
-        s.send_header("Content-type", "application/json")
-        s.end_headers()
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
 
-    def do_GET(s):
-        s.send_response(200)
-        s.send_header("Content-type", "application/json")
-        s.end_headers()
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
 
         response = json.dumps({"status": 200, "message": "OK"})
-        s.wfile.write(response.encode())
+        self.wfile.write(response.encode())
 
-    def do_POST(s):
-        length = int(s.headers['Content-Length'])
-        body = s.rfile.read(length).decode('utf-8')
-        if s.headers['Content-type'] == 'application/json':
+    def do_POST(self):
+        length = int(self.headers['Content-Length'])
+        body = self.rfile.read(length).decode('utf-8')
+        if self.headers['Content-type'] == 'application/json':
             post_data = json.loads(body)
         else:
             post_data = urllib.parse.parse_qs(body)
@@ -204,11 +204,11 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
             # calculate the distance for all features
             logger.info('calculating the distance for all features')
-            logger.debug(s.X.shape)
+            logger.debug(self.X.shape)
 
-            A = np.dot(s.X, target_feature.T)
+            A = np.dot(self.X, target_feature.T)
             B = np.dot(target_feature, target_feature.T)
-            distances = s.X_norm_sq -2*A + B
+            distances = self.X_norm_sq -2*A + B
             logger.info('calculated all distances')
             distances = np.reshape(distances, distances.shape[0])
             logger.debug(distances.shape)
@@ -217,10 +217,10 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             logger.info("sorting distances")
             indices = np.argsort(distances).tolist()    # returns the indices of the sorted distances
             lowest_distances = [(distances[i],
-                                 s.video_data[i]['videoid'],
-                                 s.video_data[i]['shot_begin_timestamp'],
-                                 s.video_data[i]['frame_timestamp'],
-                                 encode_image_in_base64(Image.open(s.video_data[i]['image_path']))) for i in indices]
+                                 self.video_data[i]['videoid'],
+                                 self.video_data[i]['shot_begin_timestamp'],
+                                 self.video_data[i]['frame_timestamp'],
+                                 encode_image_in_base64(Image.open(self.video_data[i]['image_path']))) for i in indices]
             logger.info('distances are sorted')
 
             # filter the distance such that only num_results are shown and each shot in a video appears only once
@@ -254,37 +254,37 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
                 for dis, sv, ft, sbt, fb in filtered_distances]
             )
 
-            s.send_response(200)
-            s.send_header("Content-type", "application/json")
-            s.end_headers()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
             response = json.dumps({
                 "status": 200,
                 "message": "OK",
                 "data": concepts,
                 "trimmed_target_image": trimmed_target_image
             })
-            s.wfile.write(response.encode())
+            self.wfile.write(response.encode())
         else:
             # update the index and the features
-            video_index, features, video_data = update_index(features_root=s.features_root,
-                                                             video_index=s.video_index,
-                                                             features=s.X,
-                                                             video_data=s.video_data,
+            video_index, features, video_data = update_index(features_root=self.features_root,
+                                                             video_index=self.video_index,
+                                                             features=self.X,
+                                                             video_data=self.video_data,
                                                              force_run=post_data['force_run'])
 
-            s.video_index = video_index
-            s.video_data = video_data
-            s.X = features
-            s.X_norm_sq = (features ** 2).sum(axis=1).reshape(-1, 1)
+            self.video_index = video_index
+            self.video_data = video_data
+            self.X = features
+            self.X_norm_sq = (features ** 2).sum(axis=1).reshape(-1, 1)
 
-            s.send_response(200)
-            s.send_header("Content-type", "application/json")
-            s.end_headers()
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
             response = json.dumps({
                 "status": 200,
                 "message": "OK"
             })
-            s.wfile.write(response.encode())
+            self.wfile.write(response.encode())
 
 
 if __name__ == '__main__':
