@@ -30,22 +30,14 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
 
-inception_model = load_model()
+# FIXME this has to move into some function, probably ndd
+# inception_model = load_model()
 
 
-def read_shotdetect_xml(path):
-    tree = ET.parse(path)
-    root = tree.getroot().findall('content')
-    timestamps = []
-    for child in root[0].iter():
-        if child.tag == 'shot':
-            attribs = child.attrib
 
-            timestamps.append((int(attribs['msbegin']), int(attribs['msbegin']) + int(attribs['msduration']) - 1))
-    return timestamps
+def encode_image_in_base64(image_path, target_width):
 
-
-def encode_image_in_base64(image):
+    image = Image.open(image_path)
 
     buf = BytesIO()
     image.save(buf, 'PNG')
@@ -53,7 +45,6 @@ def encode_image_in_base64(image):
     encoded_image = base64.encodebytes(encoded_image).decode('ascii')
 
     return encoded_image
-
 
 class NearDuplicateDetection:
     def __init__(self, features_root):
@@ -85,7 +76,7 @@ class NearDuplicateDetection:
                              self.video_data[i]['videoid'],
                              self.video_data[i]['shot_begin_timestamp'],
                              self.video_data[i]['frame_timestamp'],
-                             encode_image_in_base64(Image.open(self.video_data[i]['image_path']))) for i in indices]
+                             encode_image_in_base64(self.video_data[i]['image_path'])) for i in indices]
         logger.info('distances are sorted')
 
         # filter the distance such that only num_results are shown and each shot in a video appears only once
@@ -159,9 +150,10 @@ class NearDuplicateDetection:
                 features_path = glob.glob(fp, recursive=True)
 
                 # read the shotdetect results to map frames to shots
-                shotdetect_path = os.path.join(self.features_root, videoid, 'shotdetect/result.xml')
-                shot_timestamps = read_shotdetect_xml(shotdetect_path)
+                shotdetect_file_path = os.path.join(self.features_root, videoid, 'shotdetect/result.xml')
+                shot_timestamps = self.read_shotdetect_xml(shotdetect_file_path)
 
+                #
                 aux_features = []
                 aux_video_data = []
                 for i, f in enumerate(features_path):
@@ -216,9 +208,21 @@ class NearDuplicateDetection:
         self.features = features
         self.features_norm_sq = (self.features ** 2).sum(axis=1).reshape(-1, 1)
 
+    def read_shotdetect_xml(self, xml_file_path):
+        tree = ET.parse(xml_file_path)
+        root = tree.getroot().findall('content')
+        timestamps = []
+        for child in root[0].iter():
+            if child.tag == 'shot':
+                attribs = child.attrib
+
+                timestamps.append((int(attribs['msbegin']), int(attribs['msbegin']) + int(attribs['msduration']) - 1))
+        return timestamps
+
 
 class RESTHandler(http.server.BaseHTTPRequestHandler):
     def __init__(self, ndd, *args, **kwargs):
+        #   the server expects an already initialized NeadDuplicateDetection object as argument
         logger.debug("RESTHandler::__init__")
 
         self.ndd = ndd
