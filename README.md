@@ -1,1 +1,1 @@
-The commands for creating and starting the docker images for the server and the client are in the "docker commands" file
+Information about the scripts and how to run them can be found here https://hpi-airflow.readthedocs.io/en/latest/extractors.html#near-duplicate-detection
