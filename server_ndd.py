@@ -30,13 +30,17 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
 
-# FIXME this has to move into some function, probably ndd
-inception_model = load_model()
 
-
-def encode_image_in_base64(image_path, target_width=299):
+# FIXME transfer function in ndd
+def encode_image_in_base64(image_path, path=True, target_width=299):
     # reads an image from an path and returns it as byte
-    image = Image.open(image_path)
+
+    # the path flag is set to True the function expects a directory in form of a string
+    # else it is assumed that the image was opened outside of the function
+    if path:
+        image = Image.open(image_path)
+    else:
+        image = image_path
 
     # downsize the images if their width is bigger than the target_width
     # to make the response of the server smaller
@@ -63,6 +67,10 @@ class NearDuplicateDetection:
         self.features = []
         self.features_root = features_root
         self.features_norm_sq = []
+
+        # load the model for computing features from images
+        logger.info('loading inception model')
+        self.inception_model = load_model()
 
         # update the index for the first time
         self.update_index(force_run=False)
@@ -163,7 +171,7 @@ class NearDuplicateDetection:
                 shotdetect_file_path = os.path.join(self.features_root, videoid, 'shotdetect/result.xml')
                 shot_timestamps = self.read_shotdetect_xml(shotdetect_file_path)
 
-                #
+                # FIXME add comment
                 aux_features = []
                 aux_video_data = []
                 for i, f in enumerate(features_path):
@@ -180,12 +188,13 @@ class NearDuplicateDetection:
 
                 self.video_index[videoid] = {'version': done_file_version, 'features': aux_features, 'video_data': aux_video_data}
             else:
+                # FIXME clarify
                 # if features were already indexed return them from the "features" list to the index dict
 
                 # in the video_data search for the data and corresponding index for the current videoid
                 ivd = [[i, vd] for i, vd in enumerate(self.video_data) if vd['videoid'] == videoid]
 
-                # fill the video_index in the same way as in the upper if condition
+                # fill the video_index in the same way as in the above if condition
                 self.video_index[videoid]['video_data'] = []
                 self.video_index[videoid]['features'] = []
                 for i, vd in ivd:
@@ -193,7 +202,7 @@ class NearDuplicateDetection:
                     self.video_index[videoid]['features'].append(self.features[i])
 
         # create a numpy array of the data (features, paths ...) from the index
-        # this makes the features sortable, while keeping the videoid, ...
+        # this makes the features sortable, while keeping the videoid, ... FIXME
         # delete the data (except the version) from the index to save space
         features = []
         video_data = []
@@ -269,7 +278,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
                 logger.info('removed letterbox in target image')
                 target_image, _ = trim(target_image, TRIM_THRESHOLD)
 
-            trimmed_target_image = encode_image_in_base64(target_image)
+            trimmed_target_image = encode_image_in_base64(target_image, path=False)
 
             target_image = target_image.resize((image_scale, image_scale))
             target_image.save('target_image.png')
@@ -277,7 +286,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             logger.info('finished loading target image')
 
             logger.info('extract feature for target image')
-            target_feature = extract_features(inception_model, target_image)
+            target_feature = extract_features(self.ndd.inception_model, target_image)
             logger.info('done')
 
             concepts = self.ndd.calculate_distance(target_feature=target_feature, num_results=post_data['num_results'])
