@@ -12,6 +12,7 @@ import os
 import glob
 from tqdm import tqdm
 from PIL import Image
+import cv2
 from io import BytesIO
 import base64
 import numpy as np
@@ -31,20 +32,30 @@ logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
 
 # FIXME this has to move into some function, probably ndd
-# inception_model = load_model()
+inception_model = load_model()
 
 
-
-def encode_image_in_base64(image_path, target_width):
-
+def encode_image_in_base64(image_path, target_width=299):
+    # reads an image from an path and returns it as byte
     image = Image.open(image_path)
 
+    # downsize the images if their width is bigger than the target_width
+    # to make the response of the server smaller
+    resolution = np.shape(image)
+    if resolution[1] > target_width:
+
+        ratio = resolution[1] / resolution[0]
+        frame_height = int(target_width / ratio)
+        resolution_new = (target_width, frame_height)
+        image = image.resize(resolution_new)
+
     buf = BytesIO()
-    image.save(buf, 'PNG')
+    image.save(buf, 'JPEG')
     encoded_image = buf.getvalue()
     encoded_image = base64.encodebytes(encoded_image).decode('ascii')
 
     return encoded_image
+
 
 class NearDuplicateDetection:
     def __init__(self, features_root):
