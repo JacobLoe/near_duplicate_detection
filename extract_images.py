@@ -71,9 +71,15 @@ def save_shot_frames(video_path, features_dir, start_ms, end_ms, frame_width, fi
             resolution_new = (frame_width, frame_height)
             frame = cv2.resize(frame, resolution_new)
 
-        name = os.path.join(features_dir, (str(timestamp)+file_extension))
+        name = os.path.join(features_dir, (str(timestamp)+'.'+file_extension))
         frame = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-        frame.save(name, format=file_extension[1:], quality=IMAGE_QUALITY)
+        if file_extension == "jpg":
+           format='jpeg'
+        elif file_extension == 'png':
+           format='png'
+        else:
+           raise Exception("Unknown file format: {0}".format(file_extension))
+        frame.save(name, format=format, quality=IMAGE_QUALITY)
 
 
 def get_trimmed_shot_resolution(video_path, features_dir, start_ms, end_ms, frame_width, file_extension):
@@ -121,7 +127,7 @@ def get_trimmed_shot_resolution(video_path, features_dir, start_ms, end_ms, fram
         bounding_boxes.append(bounding_box)
 
         # save the frame for later use
-        name = os.path.join(features_dir, (str(timestamp) + file_extension))
+        name = os.path.join(features_dir, (str(timestamp) + '.' + file_extension))
         cv2.imwrite(name, frame)
 
     # if the shot is too short return a empty/invalid bounding box
@@ -140,11 +146,17 @@ def get_trimmed_shot_resolution(video_path, features_dir, start_ms, end_ms, fram
 def crop_saved_frames(frames_path, start_ms, end_ms, bounding_box, file_extension):
 
     for timestamp in range(start_ms, end_ms, 1000):
-        name = os.path.join(frames_path, (str(timestamp)+file_extension))
+        name = os.path.join(frames_path, (str(timestamp)+'.'+file_extension))
 
         frame = Image.open(name)
         frame = frame.crop(bounding_box)
-        frame.save(name, format=file_extension[1:], quality=IMAGE_QUALITY)
+        if file_extension == 'jpg':
+           format='jpeg'
+        elif file_extension == 'png':
+           format='png'
+        else:
+           raise Exception("Unknown file extension: {0}".format(file_extension))
+        frame.save(name, format=format, quality=IMAGE_QUALITY)
 
 
 def main(features_root, file_extension, trim_frames, frame_width, videoids, force_run):
@@ -247,7 +259,7 @@ if __name__ == "__main__":
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
     parser.add_argument("--trim_frames", default='no', choices=('yes', 'no'), help="decide whether to remove or keep black borders in the movies")
     parser.add_argument("--frame_width", type=int, default=299, help="set the width at which the frames are saved")
-    parser.add_argument("--file_extension", default='.jpeg', choices=('.jpeg', '.png'), help="define the file-extension of the frames, only .png and .jpg are supported, default is .jpeg")
+    parser.add_argument("--file_extension", default='jpg', choices=('jpg', 'png'), help="define the file-extension of the frames, only .png and .jpg are supported, default is .jpg")
     parser.add_argument("--force_run", default='False', help='sets whether the script runs regardless of the version of .done-files')
     args = parser.parse_args()
 
