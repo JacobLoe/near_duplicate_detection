@@ -53,7 +53,7 @@ def encode_image_in_base64(image_path, path=True, target_width=299):
         image = image.resize(resolution_new)
 
     buf = BytesIO()
-    image.save(buf, 'JPEG')
+    image.save(buf, 'JPG')
     encoded_image = buf.getvalue()
     encoded_image = base64.encodebytes(encoded_image).decode('ascii')
 

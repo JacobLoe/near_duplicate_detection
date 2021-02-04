@@ -13,7 +13,7 @@ import time
 
 
 UPLOAD_FOLDER = ''
-ALLOWED_EXTENSIONS = set(['png', 'jpeg'])
+ALLOWED_EXTENSIONS = set(['png', 'jpg'])
 
 # default adress should be 'server_ndd'
 if 'IMAGESEARCH_HOST' in os.environ:
