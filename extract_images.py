@@ -74,7 +74,7 @@ def save_shot_frames(video_path, features_dir, start_ms, end_ms, frame_width, fi
         name = os.path.join(features_dir, (str(timestamp)+'.'+file_extension))
         frame = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
         if file_extension == "jpg":
-           format='jpg'
+           format='jpeg'
         elif file_extension == 'png':
            format='png'
         else:
@@ -151,7 +151,7 @@ def crop_saved_frames(frames_path, start_ms, end_ms, bounding_box, file_extensio
         frame = Image.open(name)
         frame = frame.crop(bounding_box)
         if file_extension == 'jpg':
-           format='jpg'
+           format='jpeg'
         elif file_extension == 'png':
            format='png'
         else:
