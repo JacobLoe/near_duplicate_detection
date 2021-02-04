@@ -75,7 +75,7 @@ class NearDuplicateDetection:
         self.inception_model = load_model()
 
         # update the index for the first time
-        self.update_index(force_run=False)
+        self.update_index()
 
     def calculate_distance(self, target_feature, num_results):
         # calculate the distance for all features
@@ -132,21 +132,28 @@ class NearDuplicateDetection:
 
         return concepts
 
-    def update_index(self, force_run):
-        logger.info('updating feature index')
-        # get the path to all features the were extracted correctly
-        feature_done_files = glob.glob(os.path.join(self.features_root, '**', 'features', '.done'), recursive=True)
+    def update_index(self, videoids=None):
+        """
 
-        for fdf in tqdm(feature_done_files):
-            # as the videoid is taken from the feature_done_file path
-            videoid = os.path.split(os.path.split(os.path.split(fdf)[0])[0])[1]
-            done_file_version = open(fdf, 'r').read()
+        :param videoids:
+        """
+        logger.info('updating feature index')
+
+        if not videoids:
+            feature_done_files = glob.glob(os.path.join(self.features_root, '**', 'features', '.done'), recursive=True)
+            videoids = [os.path.split(os.path.split(os.path.split(fdf)[0])[0])[1] for fdf in feature_done_files]
+
+        for videoid in tqdm(videoids):
+
+            features_dir = os.path.join(self.features_root, videoid)
+
+            done_file_version = open(os.path.join(features_dir, 'features', '.done'), 'r').read()
 
             # get the file_extension of the images from the .done-file
             file_extension = done_file_version.split()[1]
 
             # check if the features have already been indexed
-            if not videoid in self.video_index or not self.video_index[videoid]['version'] == done_file_version or force_run == 'True':
+            if not videoid in self.video_index or not self.video_index[videoid]['version'] == done_file_version:
                 # index features: if there is no entry for the videoid
                 # if the version of the indexed features and the new features are different
                 # if the force_run flag has been set to true
@@ -163,11 +170,11 @@ class NearDuplicateDetection:
                     videoname = videoid
 
                 # retrieve the path to images
-                ip = os.path.join(os.path.split(os.path.split(fdf)[0])[0], 'frames/*{file_extension}'.format(file_extension=file_extension))
+                ip = os.path.join(features_dir, 'frames/*.{file_extension}'.format(file_extension=file_extension))
                 images_path = glob.glob(ip, recursive=True)
 
                 # retrieve the paths to the features and load them with numpy
-                fp = os.path.join(os.path.split(fdf)[0], '*.npy')
+                fp = os.path.join(features_dir, 'features', '*.npy')
                 features_path = glob.glob(fp, recursive=True)
 
                 # read the shotdetect results to map frames to shots
@@ -179,9 +186,10 @@ class NearDuplicateDetection:
                 aux_video_data = []
                 for i, f in enumerate(features_path):
                     aux_features.append(np.load(f)[0])
-                    frame_timestamp = os.path.split(images_path[i])[1][:-len(file_extension)]
+                    frame_timestamp = os.path.splitext(os.path.split(images_path[i])[1])[0]
 
                     for ts in shot_timestamps:
+                        #
                         if ts[0] < int(frame_timestamp) < ts[1]:
                             shot_begin_timestamp = ts[0]
 
@@ -274,7 +282,6 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
         if not post_data['update_index']:
             # calculate the nearest neighbours the target image
             logger.info('load target_image')
-            image_scale = 299
             target_image = post_data['target_image']
             target_image = BytesIO(base64.b64decode(target_image))
 
@@ -282,14 +289,12 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
             target_image_bytes = encode_image_in_base64(target_image)
 
-            target_image = target_image.resize((image_scale, image_scale))
-            target_image.save('target_image.png')
+            target_image = target_image.resize((299, 299))
             target_image = np.array(target_image)
             logger.info('finished loading target image')
 
             logger.info('extract feature for target image')
             target_feature = extract_features(self.ndd.inception_model, target_image)
-            logger.info('done')
 
             concepts = self.ndd.calculate_distance(target_feature=target_feature, num_results=post_data['num_results'])
 
@@ -305,7 +310,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(response.encode())
         else:
             # update the index and the features
-            self.ndd.update_index(force_run=post_data['force_run'])
+            self.ndd.update_index(videoids=post_data['videoids'])
 
             self.send_response(200)
             self.send_header("Content-type", "application/json")
