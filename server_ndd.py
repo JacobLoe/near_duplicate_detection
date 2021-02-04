@@ -19,7 +19,8 @@ import xml.etree.ElementTree as ET
 import requests
 
 
-TRIM_THRESHOLD = 12
+TRIM_THRESHOLD = 12     # the threshold for the trim function, pixels with values lower are considered black and croppped
+TARGET_WIDTH = 480  # all images that are sent to the client will be scaled to this width (while keeping the aspect ratio intact)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -32,32 +33,33 @@ logger.propagate = False    # prevent log messages from appearing twice
 
 
 # FIXME transfer function in ndd
-def encode_image_in_base64(image_path, path=True, target_width=299):
-    # reads an image from an path and returns it as byte
-
-    # the path flag is set to True the function expects a directory in form of a string
-    # else it is assumed that the image was opened outside of the function
-    if path:
-        image = Image.open(image_path)
-    else:
-        image = image_path
-
-    # downsize the images if their width is bigger than the target_width
-    # to make the response of the server smaller
-    resolution = np.shape(image)
-    if resolution[1] > target_width:
-
-        ratio = resolution[1] / resolution[0]
-        frame_height = int(target_width / ratio)
-        resolution_new = (target_width, frame_height)
-        image = image.resize(resolution_new)
+def encode_image_in_base64(image):
 
     buf = BytesIO()
-    image.save(buf, 'JPG')
+    image.save(buf, 'JPEG')
     encoded_image = buf.getvalue()
     encoded_image = base64.encodebytes(encoded_image).decode('ascii')
 
     return encoded_image
+
+
+def resize_image(image_path, remove_letterbox=False):
+
+    image = Image.open(image_path)
+
+    if remove_letterbox == 'True':
+        image, _ = trim(image, TRIM_THRESHOLD)
+
+    # downsize the images if their width is bigger than the target_width
+    # to make the response of the server smaller
+    if TARGET_WIDTH:
+        resolution = np.shape(image)
+        ratio = resolution[1] / resolution[0]
+        frame_height = int(TARGET_WIDTH / ratio)
+        resolution_new = (TARGET_WIDTH, frame_height)
+        image = image.resize(resolution_new)
+
+    return image
 
 
 class NearDuplicateDetection:
@@ -94,7 +96,8 @@ class NearDuplicateDetection:
                              self.video_data[i]['videoid'],
                              self.video_data[i]['shot_begin_timestamp'],
                              self.video_data[i]['frame_timestamp'],
-                             encode_image_in_base64(self.video_data[i]['image_path'])) for i in indices]
+                             encode_image_in_base64(resize_image(self.video_data[i]['image_path'])))
+                            for i in indices]
         logger.info('distances are sorted')
 
         # filter the distance such that only num_results are shown and each shot in a video appears only once
@@ -273,12 +276,11 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             logger.info('load target_image')
             image_scale = 299
             target_image = post_data['target_image']
-            target_image = Image.open(BytesIO(base64.b64decode(target_image)))
-            if post_data['remove_letterbox'] == 'True':
-                logger.info('removed letterbox in target image')
-                target_image, _ = trim(target_image, TRIM_THRESHOLD)
+            target_image = BytesIO(base64.b64decode(target_image))
 
-            trimmed_target_image = encode_image_in_base64(target_image, path=False)
+            target_image = resize_image(target_image, remove_letterbox=post_data['remove_letterbox'])
+
+            target_image_bytes = encode_image_in_base64(target_image)
 
             target_image = target_image.resize((image_scale, image_scale))
             target_image.save('target_image.png')
@@ -298,7 +300,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
                 "status": 200,
                 "message": "OK",
                 "data": concepts,
-                "trimmed_target_image": trimmed_target_image
+                "trimmed_target_image": target_image_bytes
             })
             self.wfile.write(response.encode())
         else:
