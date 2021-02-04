@@ -41,7 +41,7 @@ def load_model():
 def extract_all_features_from_movie(features_dir, file_extension, model):
     frames_path = os.path.join(os.path.split(features_dir)[0], 'frames')
     # get the paths to all frames for the video
-    frames_path = glob.glob(os.path.join(frames_path, '*' + file_extension))
+    frames_path = glob.glob(os.path.join(frames_path, '*' + '.' + file_extension))
     if not frames_path:
         raise Exception('There were no images found with the file extension "{file_extension1}". '
                         'Check if the correct extension was used for the feature extraction or '
@@ -56,7 +56,7 @@ def extract_all_features_from_movie(features_dir, file_extension, model):
         feature = extract_features(model, frame)  # run the model on the frame
 
         # get the name from the frame and save the feature with same name
-        np_feature_name = os.path.split(fp)[1][:-len(file_extension)]
+        np_feature_name = os.path.splitext(os.path.split(fp)[1])[0]
         feature_path = os.path.join(features_dir, np_feature_name)
         np.save(feature_path, feature)
 
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("features_root", help="the directory where the feature-vectors are to be stored, for example 'features'")
     parser.add_argument("videoids", help="List of video ids. If empty, entire corpus is iterated.", nargs='*')
-    parser.add_argument("--file_extension", default='.jpg', choices=('.jpg', '.png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpg")
+    parser.add_argument("--file_extension", default='jpg', choices=('jpg', 'png'), help="use the extension in which the frames were saved, only .png and .jpg are supported, default is .jpg")
     parser.add_argument("--force_run", default='False', help='sets whether the script runs regardless of the version of .done-files')
     args = parser.parse_args()
 
