@@ -2,11 +2,12 @@ import subprocess
 import argparse
 import os
 from tqdm import tqdm
+import csv
 import shutil
 import xml.etree.ElementTree as ET
 import logging
 
-VERSION = '20201215'      # the date the script was last changed
+VERSION = '20210204'      # the date the script was last changed
 EXTRACTOR = 'shotdetect'
 STANDALONE = True  # manages the creation of .done-files, if set to false no .done-files are created and the script will always overwrite old results
 
@@ -18,6 +19,24 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
+
+
+def extractShots(xmlfile, csvfile):
+    tree = ET.parse(xmlfile)
+    content = tree.getroot().find('content')
+    media = content.find('head').find('media')
+    shots = content.find('body').find('shots')
+    
+    logger.debug('Write shotdetect csv file for {xmlfile}'.format(xmlfile=xmlfile))
+    
+    with open(csvfile, "wt") as of:
+        tsv_writer = csv.writer(of, delimiter='\t')
+        for shot in shots:
+            attribs = shot.attrib
+            begin = int(attribs.get('msbegin'));
+            end = begin + int(attribs.get('msduration'))
+            content = attribs.get('id')
+            tsv_writer.writerow([begin, end, content]);
 
 
 def check_shotdetection(xml_path, stderr, stdout):
@@ -85,6 +104,11 @@ def main(features_root, sensitivity, videoids, force_run):
                 os.makedirs(features_dir)
 
             shotdetect(video_dir, features_dir, sensitivity)
+
+            # convert results.xml to csv
+            xmlfile = os.path.join(features_dir, 'result.xml')
+            csvfile = os.path.join(features_dir, '{vid}.csv'.format(vid=videoid))
+            extractShots(xmlfile,csvfile)
 
             # create a hidden file to signal that the asr for a movie is done
             # write the current version of the script in the file
