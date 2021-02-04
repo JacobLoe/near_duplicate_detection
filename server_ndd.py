@@ -179,7 +179,7 @@ class NearDuplicateDetection:
                 aux_video_data = []
                 for i, f in enumerate(features_path):
                     aux_features.append(np.load(f)[0])
-                    frame_timestamp = os.path.split(images_path[i])[1][:-len(file_extension)]
+                    frame_timestamp = os.path.splitext(os.path.split(images_path[i])[1])[0]
 
                     for ts in shot_timestamps:
                         if ts[0] < int(frame_timestamp) < ts[1]:
