@@ -1,4 +1,3 @@
-# build
 docker build -f Dockerfile_shot_detection -t jacobloe/shotdetect:0.1 .
 docker build -f Dockerfile_extract_images -t jacobloe/extract_images:0.1 .
 docker build -f Dockerfile_extract_aspect_ratio -t jacobloe/extract_aspect_ratio:0.1 .
