@@ -2,13 +2,13 @@ FROM python:3.6.8-stretch
 
 ENV DEBIAN_FRONTEND noninteractive
 
-COPY requirements_server_ndd.txt /root
+COPY requirements/requirements_server_ndd.txt /root
 
 RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_server_ndd.txt
 
-COPY server_ndd.py /root
-COPY extract_features.py /root
-COPY crop_image.py /root
+COPY scripts/server_ndd.py /root
+COPY scripts/extract_features.py /root
+COPY scripts/crop_image.py /root
 
 EXPOSE 9000
 

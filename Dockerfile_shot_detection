@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y shotdetect=1.0.86-5+b1 && apt-get clean
 RUN pip3 install --trusted-host pypi.python.org argparse==1.4.0
 RUN pip3 install tqdm==4.43.0
 
-COPY shotdetect.py /root
+COPY scripts/shotdetect.py /root
 
 VOLUME "/data"
 
