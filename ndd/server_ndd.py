@@ -402,22 +402,24 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
 
         if not post_data['update_index']:
             # calculate the nearest neighbours the target image
-            logger.info('load target_image')
-            target_image = post_data['target_image']
-            target_image = BytesIO(base64.b64decode(target_image))
+            logger.info('load query image')
+            query_image = post_data['query_image']
+            query_image = BytesIO(base64.b64decode(query_image))
 
-            target_image = resize_image(target_image, remove_letterbox=post_data['remove_letterbox'])
+            # FIXME maybe suppress the resizing, to prevent double resize for feature extraction, suppression may lead to trouble with displaying on the client
+            query_image = resize_image(query_image, remove_letterbox=post_data['remove_letterbox'])
 
-            target_image_bytes = encode_image_in_base64(target_image)
+            resized_query_image = query_image.resize((299, 299))
+            resized_query_image = np.array(resized_query_image)
+            logger.info('finished loading query image')
 
-            target_image = target_image.resize((299, 299))
-            target_image = np.array(target_image)
-            logger.info('finished loading target image')
+            logger.info('extract feature for query image')
+            query_feature = extract_features(self.ndd.inception_model, resized_query_image)
 
-            logger.info('extract feature for target image')
-            target_feature = extract_features(self.ndd.inception_model, target_image)
+            concepts = self.ndd.calculate_distance(target_feature=query_feature, num_results=post_data['num_results'])
 
-            concepts = self.ndd.calculate_distance(target_feature=target_feature, num_results=post_data['num_results'])
+            # encode query image to send it back to the client
+            query_image_bytes = encode_image_in_base64(query_image)
 
             self.send_response(200)
             self.send_header("Content-type", "application/json")
@@ -426,7 +428,7 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
                 "status": 200,
                 "message": "OK",
                 "data": concepts,
-                "trimmed_target_image": target_image_bytes
+                "query_image_bytes": query_image_bytes
             })
             self.wfile.write(response.encode())
         else:

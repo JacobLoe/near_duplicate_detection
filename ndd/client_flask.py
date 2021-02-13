@@ -22,12 +22,12 @@ else:
     IMAGESEARCH_HOST = 'server_ndd'
 
 
-def write_html_str(results, target_image):
+def write_html_str(results, query_image):
 
     # write to html
     html_str = '<!DOCTYPE html><html lang="en"><table cellspacing="20"><tr><th>thumbnail</th><th>videofile</th><th>frame timestamp</th><th>shot_beginning</th><th>distance</th></tr>'
     # add the target image to the html
-    html_str += str('<tr><td><img src="data:image/jpg;base64,{}" width="480"></td></tr>'.format(target_image))
+    html_str += str('<tr><td><img src="data:image/jpg;base64,{query_image}" width="480"></td></tr>'.format(query_image=query_image))
 
     # append the found images to the html
     for row in results:
@@ -150,7 +150,7 @@ def upload_file():
 
             # call the main function of the query
             response = session.post(url, headers=headers, json={
-                'target_image': target_image,
+                'query_image': target_image,
                 'num_results': num_results,
                 'remove_letterbox': remove_letterbox,
                 'update_index': False
@@ -161,9 +161,9 @@ def upload_file():
             # get the results from the server as a list of dicts
             results = output.get('data')
 
-            trimmed_target_image = output.get('trimmed_target_image')
+            query_image_bytes = output.get('query_image_bytes')
 
-            html_table = write_html_str(results, trimmed_target_image)
+            html_table = write_html_str(results, query_image_bytes)
             return html_table
     return '''
     <!doctype html>
