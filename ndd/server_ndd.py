@@ -6,7 +6,7 @@ import logging
 from functools import partial
 
 from extract_features import extract_features, load_model
-from utils import trim
+from utils import trim, read_shotdetect_xml
 
 import os
 import glob
@@ -15,7 +15,6 @@ from PIL import Image
 from io import BytesIO
 import base64
 import numpy as np
-import xml.etree.ElementTree as ET
 import requests
 
 
@@ -203,7 +202,7 @@ class NearDuplicateDetection:
 
                 # read the shotdetect results to map frames to shots
                 shotdetect_file_path = os.path.join(self.features_root, videoid, 'shotdetect/result.xml')
-                shot_timestamps = self.read_shotdetect_xml(shotdetect_file_path)
+                shot_timestamps = read_shotdetect_xml(shotdetect_file_path)
 
                 # FIXME add comment
                 aux_features = []
@@ -358,17 +357,6 @@ class NearDuplicateDetection:
 
         else:
             logger.info('No features were extracted yet. Server is not ready to calculate nearest neighbours until the index is updated with features')
-
-    def read_shotdetect_xml(self, xml_file_path):
-        tree = ET.parse(xml_file_path)
-        root = tree.getroot().findall('content')
-        timestamps = []
-        for child in root[0].iter():
-            if child.tag == 'shot':
-                attribs = child.attrib
-
-                timestamps.append((int(attribs['msbegin']), int(attribs['msbegin']) + int(attribs['msduration']) - 1))
-        return timestamps
 
 
 class RESTHandler(http.server.BaseHTTPRequestHandler):

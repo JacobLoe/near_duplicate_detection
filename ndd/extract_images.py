@@ -2,10 +2,9 @@ import os
 import cv2
 import argparse
 from tqdm import tqdm
-import xml.etree.ElementTree as ET
 import numpy as np
 from PIL import Image
-from utils import get_aspect_ratios, trim
+from utils import get_aspect_ratios, trim, read_shotdetect_xml
 import shutil
 import logging
 
@@ -24,17 +23,6 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
-
-
-def read_shotdetect_xml(path):
-    tree = ET.parse(path)
-    root = tree.getroot().findall('content')
-    timestamps = []
-    for child in root[0].iter():
-        if child.tag == 'shot':
-            attribs = child.attrib
-            timestamps.append((int(attribs['msbegin']), int(attribs['msbegin'])+int(attribs['msduration'])-1))
-    return timestamps
 
 
 # read video file frame by frame, beginning and ending with a timestamp

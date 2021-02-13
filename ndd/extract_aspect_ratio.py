@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 from PIL import Image
 from scipy.spatial.distance import euclidean
-import xml.etree.ElementTree as ET
+from utils import read_shotdetect_xml
 import shutil
 import cv2
 import logging
@@ -22,18 +22,6 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
-
-
-def read_shotdetect_xml(path):
-    tree = ET.parse(path)
-    root = tree.getroot().findall('content')
-    timestamps = []
-    for child in root[0].iter():
-        if child.tag == 'shot':
-            attribs = child.attrib
-
-            timestamps.append((int(attribs['msbegin']), int(attribs['msbegin']) + int(attribs['msduration']) - 1))
-    return timestamps
 
 
 def save_aspect_ratio_to_csv(video_path, features_dir, file_extension, videoid):
