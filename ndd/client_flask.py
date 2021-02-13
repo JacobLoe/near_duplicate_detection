@@ -115,19 +115,18 @@ def upload_file():
             filename = secure_filename(file.filename)
 
             # save the uploaded image with a .. name and the correct file extension, to only ever save one image on disk
-            # filename = ('target_image' + os.path.splitext(filename)[1])
             filename = str(time.time()) + os.path.splitext(filename)[1]
-            target_image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            if os.path.isfile(target_image_path):
-                os.remove(target_image_path)
+            query_image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.isfile(query_image_path):
+                os.remove(query_image_path)
 
-            file.save(target_image_path)
-            target_image = Image.open(target_image_path)
-            target_image = target_image.convert('RGB')
+            file.save(query_image_path)
+            query_image = Image.open(query_image_path)
+            query_image = query_image.convert('RGB')
             buf = BytesIO()
-            target_image.save(buf, 'PNG')
-            target_image = buf.getvalue()
-            target_image = base64.encodebytes(target_image).decode('ascii')
+            query_image.save(buf, 'PNG')
+            query_image = buf.getvalue()
+            query_image = base64.encodebytes(query_image).decode('ascii')
 
             url = 'http://{hostname}:9000/'.format(hostname=IMAGESEARCH_HOST)  # the name assigned in the docker subnet
 
@@ -150,7 +149,7 @@ def upload_file():
 
             # call the main function of the query
             response = session.post(url, headers=headers, json={
-                'query_image': target_image,
+                'query_image': query_image,
                 'num_results': num_results,
                 'remove_letterbox': remove_letterbox,
                 'update_index': False
