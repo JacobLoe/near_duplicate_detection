@@ -6,7 +6,7 @@ import logging
 from functools import partial
 
 from extract_features import extract_features, load_model
-from crop_image import trim
+from utils import trim
 
 import os
 import glob
@@ -162,7 +162,6 @@ class NearDuplicateDetection:
         if not videoids:
             feature_done_files = glob.glob(os.path.join(self.features_root, '**', 'features', '.done'), recursive=True)
             videoids = [os.path.split(os.path.split(os.path.split(fdf)[0])[0])[1] for fdf in feature_done_files]
-<<<<<<< HEAD:server_ndd.py
         elif True:
             pass
         for videoid in tqdm(videoids):
@@ -259,8 +258,6 @@ class NearDuplicateDetection:
         self.video_data = video_data
         self.features = features
         self.features_norm_sq = (self.features ** 2).sum(axis=1).reshape(-1, 1)
-=======
-
         if videoids:
             for videoid in tqdm(videoids):
 
@@ -359,7 +356,6 @@ class NearDuplicateDetection:
 
         else:
             logger.info('No features were extracted yet. Server is not ready to calculate nearest neighbours until the index is updated with features')
->>>>>>> 8888bc24aeba57f002745ec8e2534609a7edd200:scripts/server_ndd.py
 
     def read_shotdetect_xml(self, xml_file_path):
         tree = ET.parse(xml_file_path)
