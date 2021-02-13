@@ -1,14 +1,12 @@
-# docker run --rm -it -v $(pwd)/static/features_videos/:/root/static -p 8000:80 --network ndd_subnet --name client_flask jacobloe/client_flask:0.1
-
 FROM python:3.6.8-stretch
 
 ENV DEBIAN_FRONTEND noninteractive
 
-COPY requirements_client_flask.txt /root
+COPY requirements/requirements_client_flask.txt /root
 
 RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_client_flask.txt
 
-COPY client_flask.py /root
+COPY scripts/client_flask.py /root
 
 EXPOSE 80
 
