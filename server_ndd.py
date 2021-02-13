@@ -34,7 +34,11 @@ logger.propagate = False    # prevent log messages from appearing twice
 
 # FIXME transfer function in ndd
 def encode_image_in_base64(image):
+    """
 
+    :param image:
+    :return:
+    """
     buf = BytesIO()
     image.save(buf, 'JPEG')
     encoded_image = buf.getvalue()
@@ -44,7 +48,12 @@ def encode_image_in_base64(image):
 
 
 def resize_image(image_path, remove_letterbox=False):
+    """
 
+    :param image_path:
+    :param remove_letterbox:
+    :return:
+    """
     image = Image.open(image_path)
 
     if remove_letterbox == 'True':
@@ -64,6 +73,10 @@ def resize_image(image_path, remove_letterbox=False):
 
 class NearDuplicateDetection:
     def __init__(self, features_root):
+        """
+
+        :param features_root:
+        """
         self.video_index = {}
         self.video_data = []
         self.features = []
@@ -78,6 +91,12 @@ class NearDuplicateDetection:
         self.update_index()
 
     def calculate_distance(self, target_feature, num_results):
+        """
+
+        :param target_feature:
+        :param num_results:
+        :return:
+        """
         # calculate the distance for all features
         logger.info('calculating the distance for all features')
         logger.debug(self.features.shape)
@@ -132,7 +151,7 @@ class NearDuplicateDetection:
 
         return concepts
 
-    def update_index(self, videoids=None):
+    def update_index(self, videoids=[]):
         """
 
         :param videoids:
@@ -142,7 +161,8 @@ class NearDuplicateDetection:
         if not videoids:
             feature_done_files = glob.glob(os.path.join(self.features_root, '**', 'features', '.done'), recursive=True)
             videoids = [os.path.split(os.path.split(os.path.split(fdf)[0])[0])[1] for fdf in feature_done_files]
-
+        elif True:
+            pass
         for videoid in tqdm(videoids):
 
             features_dir = os.path.join(self.features_root, videoid)
