@@ -4,9 +4,8 @@ import argparse
 from tqdm import tqdm
 import xml.etree.ElementTree as ET
 import numpy as np
-from crop_image import trim
 from PIL import Image
-from video_aspect_ratio import get_aspect_ratios
+from utils import get_aspect_ratios, trim
 import shutil
 import logging
 

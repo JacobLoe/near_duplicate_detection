@@ -6,9 +6,9 @@ COPY requirements/requirements_server_ndd.txt /root
 
 RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_server_ndd.txt
 
-COPY scripts/server_ndd.py /root
-COPY scripts/extract_features.py /root
-COPY scripts/crop_image.py /root
+COPY ndd/server_ndd.py /root
+COPY ndd/extract_features.py /root
+COPY ndd/utils.py /root
 
 EXPOSE 9000
 

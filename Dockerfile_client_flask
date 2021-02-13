@@ -6,7 +6,7 @@ COPY requirements/requirements_client_flask.txt /root
 
 RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_client_flask.txt
 
-COPY scripts/client_flask.py /root
+COPY ndd/client_flask.py /root
 
 EXPOSE 80
 

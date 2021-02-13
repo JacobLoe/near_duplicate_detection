@@ -7,8 +7,7 @@ COPY requirements/requirements_extract_features.txt /root
 
 RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_extract_features.txt
 
-COPY scripts/extract_features.py /root
-COPY scripts/crop_image.py /root
+COPY ndd/extract_features.py /root
 
 VOLUME /root/.keras
 VOLUME /data

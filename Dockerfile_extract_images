@@ -8,9 +8,8 @@ COPY requirements/requirements_extract_images.txt /root
 RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_extract_images.txt
 RUN apt update && apt install -y ffmpeg
 
-COPY scripts/extract_images.py /root
-COPY scripts/crop_image.py /root
-COPY scripts/video_aspect_ratio.py /root
+COPY ndd/extract_images.py /root
+COPY ndd/utils.py /root
 
 VOLUME "/data"
 

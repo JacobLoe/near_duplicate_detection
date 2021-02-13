@@ -210,7 +210,6 @@ class NearDuplicateDetection:
                     frame_timestamp = os.path.splitext(os.path.split(images_path[i])[1])[0]
 
                     for ts in shot_timestamps:
-                        #
                         if ts[0] < int(frame_timestamp) < ts[1]:
                             shot_begin_timestamp = ts[0]
 
