@@ -35,9 +35,9 @@ logger.propagate = False    # prevent log messages from appearing twice
 # FIXME transfer function in ndd
 def encode_image_in_base64(image):
     """
-
-    :param image:
-    :return:
+    Takes an image opened with PIL and encodes it into base64
+    :param image:   PIL image object
+    :return:    a bytes object as string
     """
     buf = BytesIO()
     image.save(buf, 'JPEG')
@@ -47,12 +47,14 @@ def encode_image_in_base64(image):
     return encoded_image
 
 
-def resize_image(image_path, remove_letterbox=False):
+def resize_image(image_path, remove_letterbox=False, target_width=TARGET_WIDTH):
     """
+    Resizes an image to a target width according to its aspect ratio, if needed removes the black border
 
-    :param image_path:
-    :param remove_letterbox:
-    :return:
+    :param image_path: type string, the path to the image
+    :param remove_letterbox: type bool, default False, removes black border around the image
+    :param target_width: type int, default is TARGET_WIDTH specified at the top of the script, defines the width to which the image is scaled
+    :return:    PIL image object
     """
     image = Image.open(image_path)
 
@@ -61,7 +63,7 @@ def resize_image(image_path, remove_letterbox=False):
 
     # downsize the images if their width is bigger than the target_width
     # to make the response of the server smaller
-    if TARGET_WIDTH:
+    if target_width:
         resolution = np.shape(image)
         ratio = resolution[1] / resolution[0]
         frame_height = int(TARGET_WIDTH / ratio)
@@ -74,8 +76,9 @@ def resize_image(image_path, remove_letterbox=False):
 class NearDuplicateDetection:
     def __init__(self, features_root):
         """
-
-        :param features_root:
+        Initializes the variables of a NearDuplicateDetection object. Loads the model for ..
+        Creates the index from scratch (either with empty variables or from the already existing files)
+        :param features_root: type string, defines the directory under which all files (video, images, shotdetection, features) for the ndd are saved
         """
         self.video_index = {}
         self.video_data = []
@@ -92,9 +95,9 @@ class NearDuplicateDetection:
 
     def calculate_distance(self, target_feature, num_results):
         """
-
-        :param target_feature:
-        :param num_results:
+        Computes and returns the nearest neighbours to the query feature
+        :param target_feature: type numpy array, the feature array of the query image
+        :param num_results: type int, defines how many results are to be returned
         :return:
         """
         # calculate the distance for all features
