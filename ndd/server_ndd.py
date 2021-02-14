@@ -6,7 +6,7 @@ import logging
 from functools import partial
 
 from extract_features import extract_features, load_model
-from utils import trim, read_shotdetect_xml
+from utils import trim, read_shotdetect
 
 import os
 import glob
@@ -201,8 +201,8 @@ class NearDuplicateDetection:
                 features_path = glob.glob(fp, recursive=True)
 
                 # read the shotdetect results to map frames to shots
-                shotdetect_file_path = os.path.join(self.features_root, videoid, 'shotdetect/result.xml')
-                shot_timestamps = read_shotdetect_xml(shotdetect_file_path)
+                shotdetect_file_path = os.path.join(self.features_root, videoid, 'shotdetect', videoid+'.csv')
+                shot_timestamps = read_shotdetect(shotdetect_file_path)
 
                 # FIXME add comment
                 aux_features = []

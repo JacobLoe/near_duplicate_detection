@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 from PIL import Image
 from scipy.spatial.distance import euclidean
-from utils import read_shotdetect_xml
+from utils import read_shotdetect
 import shutil
 import cv2
 import logging
@@ -34,7 +34,7 @@ def save_aspect_ratio_to_csv(video_path, features_dir, file_extension, videoid):
     vid.release()
     cv2.destroyAllWindows()
 
-    shot_timestamps = read_shotdetect_xml(os.path.join(os.path.split(features_dir)[0], 'shotdetect/result.xml'))
+    shot_timestamps = read_shotdetect(os.path.join(os.path.split(features_dir)[0], 'shotdetect', videoid+'.csv'))
     if not shot_timestamps:
         raise Exception('No shots could be found. Check the shotdetection results again')
 

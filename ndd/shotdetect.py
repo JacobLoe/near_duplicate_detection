@@ -108,7 +108,7 @@ def main(features_root, sensitivity, videoids, force_run):
             # convert results.xml to csv
             xmlfile = os.path.join(features_dir, 'result.xml')
             csvfile = os.path.join(features_dir, '{vid}.csv'.format(vid=videoid))
-            extractShots(xmlfile,csvfile)
+            extractShots(xmlfile, csvfile)
 
             # create a hidden file to signal that the asr for a movie is done
             # write the current version of the script in the file

@@ -1,18 +1,20 @@
 from PIL import Image, ImageChops
 import subprocess
 import json
-import xml.etree.ElementTree as ET
+import csv
 
 
-def read_shotdetect_xml(xml_file_path):
-    tree = ET.parse(xml_file_path)
-    root = tree.getroot().findall('content')
+def read_shotdetect(shotdetect_path):
+    """
+
+    :param shotdetect_path:
+    :return:
+    """
     timestamps = []
-    for child in root[0].iter():
-        if child.tag == 'shot':
-            attribs = child.attrib
-
-            timestamps.append((int(attribs['msbegin']), int(attribs['msbegin']) + int(attribs['msduration']) - 1))
+    with open(shotdetect_path, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter='\t')
+        for line in csv_reader:
+            timestamps.append((int(line[0]), int(line[1])-1))
     return timestamps
 
 
