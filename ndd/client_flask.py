@@ -32,8 +32,8 @@ def write_html_str(results, query_image):
     # append the found images to the html
     for row in results:
         # write an entry for the table, format is: frame_path, source_video, frame_timestamp, shot_begin_frame, distance
-        html_str += str('<tr><td><img src="data:image/jpg;base64,{frame_bytes}" width="480"></td><td>{source_video}</td>'
-                        '<td>{frame_timestamp}</td><td>{shot_begin_timestamp}</td><td>{distance}</td></tr>'.format(frame_bytes=row['frame_bytes'],
+        html_str += str('<tr><td><img src="data:image/jpg;base64,{frame}" width="480"></td><td>{source_video}</td>'
+                        '<td>{frame_timestamp}</td><td>{shot_begin_timestamp}</td><td>{distance}</td></tr>'.format(frame=row['frame'],
                                                                                             source_video=row['source_video'],
                                                                                             frame_timestamp=row['frame_timestamp'],
                                                                                             shot_begin_timestamp=row['shot_begin_timestamp'],

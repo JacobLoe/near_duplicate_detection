@@ -31,21 +31,6 @@ logger.addHandler(ch)
 logger.propagate = False    # prevent log messages from appearing twice
 
 
-# FIXME transfer function in ndd
-def encode_image_in_base64(image):
-    """
-    Takes an image opened with PIL and encodes it into base64
-    :param image:   PIL image object
-    :return:    a bytes object as string
-    """
-    buf = BytesIO()
-    image.save(buf, 'JPEG')
-    encoded_image = buf.getvalue()
-    encoded_image = base64.encodebytes(encoded_image).decode('ascii')
-
-    return encoded_image
-
-
 def resize_image(image_path, remove_letterbox=False, target_width=TARGET_WIDTH):
     """
     Resizes an image to a target width according to its aspect ratio, if needed removes the black border
@@ -117,7 +102,7 @@ class NearDuplicateDetection:
                              self.video_data[i]['videoid'],
                              self.video_data[i]['shot_begin_timestamp'],
                              self.video_data[i]['frame_timestamp'],
-                             encode_image_in_base64(resize_image(self.video_data[i]['image_path'])))
+                             resize_image(self.video_data[i]['image_path']))
                             for i in indices]
         logger.info('distances are sorted')
 
@@ -146,20 +131,21 @@ class NearDuplicateDetection:
                 'source_video': sv,
                 'frame_timestamp': str(datetime.timedelta(seconds=int(ft) / 1000)),
                 'shot_begin_timestamp': str(datetime.timedelta(seconds=int(sbt) / 1000)),
-                'frame_bytes': fb
+                'frame': f
             }
-            for dis, sv, ft, sbt, fb in filtered_distances]
+            for dis, sv, ft, sbt, f in filtered_distances]
         )
 
         return concepts
 
-    def update_index(self, videoids=[]):
+    def update_index(self, videoids=None):
         """
 
         :param videoids:
         """
         logger.info('updating feature index')
 
+        # FIXME
         # if no videoids were supplied find all features that were already extracted correctly (meaning a .done-file exists)
         if not videoids:
             feature_done_files = glob.glob(os.path.join(self.features_root, '**', 'features', '.done'), recursive=True)
@@ -407,7 +393,12 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
             concepts = self.ndd.calculate_distance(target_feature=query_feature, num_results=post_data['num_results'])
 
             # encode query image to send it back to the client
-            query_image_bytes = encode_image_in_base64(query_image)
+            query_image_bytes = self.encode_image_in_base64(query_image)
+            # encode .. images
+            for i, c in enumerate(concepts):
+                frame = c['frame']
+                encoded_frame = self.encode_image_in_base64(frame)
+                concepts[i]['frame'] = encoded_frame
 
             self.send_response(200)
             self.send_header("Content-type", "application/json")
@@ -431,6 +422,19 @@ class RESTHandler(http.server.BaseHTTPRequestHandler):
                 "message": "OK"
             })
             self.wfile.write(response.encode())
+
+    def encode_image_in_base64(self, image):
+        """
+        Takes an image opened with PIL and encodes it into base64
+        :param image:   PIL image object
+        :return:    a bytes object as string
+        """
+        buf = BytesIO()
+        image.save(buf, 'JPEG')
+        encoded_image = buf.getvalue()
+        encoded_image = base64.encodebytes(encoded_image).decode('ascii')
+
+        return encoded_image
 
 
 if __name__ == '__main__':
