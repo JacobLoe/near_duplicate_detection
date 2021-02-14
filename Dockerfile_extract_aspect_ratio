@@ -8,6 +8,7 @@ COPY requirements/requirements_extract_aspect_ratio.txt /root
 RUN pip3 install --trusted-host pypi.python.org -r /root/requirements_extract_aspect_ratio.txt
 
 COPY ndd/extract_aspect_ratio.py /root
+COPY ndd/utils.py /root
 
 VOLUME "/data"
 
