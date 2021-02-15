@@ -150,101 +150,7 @@ class NearDuplicateDetection:
         if not videoids:
             feature_done_files = glob.glob(os.path.join(self.features_root, '**', 'features', '.done'), recursive=True)
             videoids = [os.path.split(os.path.split(os.path.split(fdf)[0])[0])[1] for fdf in feature_done_files]
-        elif True:
-            pass
-        for videoid in tqdm(videoids):
 
-            features_dir = os.path.join(self.features_root, videoid)
-
-            done_file_version = open(os.path.join(features_dir, 'features', '.done'), 'r').read()
-
-            # get the file_extension of the images from the .done-file
-            file_extension = done_file_version.split()[1]
-
-            # check if the features have already been indexed
-            if not videoid in self.video_index or not self.video_index[videoid]['version'] == done_file_version:
-                # index features: if there is no entry for the videoid
-                # if the version of the indexed features and the new features are different
-                # if the force_run flag has been set to true
-
-                # get the name of the video from ada the server
-                try:
-                    media_base_url = "http://ada.filmontology.org/api_dev/media/"
-                    r = requests.get(media_base_url + videoid)
-                    if r.status_code == 200:
-                        data = r.json()
-                        video_url = data.get('videourl')
-                        videoname = os.path.split(video_url)[1][:-4]
-                except:
-                    videoname = videoid
-
-                # retrieve the path to images
-                ip = os.path.join(features_dir, 'frames/*.{file_extension}'.format(file_extension=file_extension))
-                images_path = glob.glob(ip, recursive=True)
-
-                # retrieve the paths to the features and load them with numpy
-                fp = os.path.join(features_dir, 'features', '*.npy')
-                features_path = glob.glob(fp, recursive=True)
-
-                # read the shotdetect results to map frames to shots
-                shotdetect_file_path = os.path.join(self.features_root, videoid, 'shotdetect', videoid+'.csv')
-                shot_timestamps = read_shotdetect(shotdetect_file_path)
-
-                # FIXME add comment
-                aux_features = []
-                aux_video_data = []
-                for i, f in enumerate(features_path):
-                    aux_features.append(np.load(f)[0])
-                    frame_timestamp = os.path.splitext(os.path.split(images_path[i])[1])[0]
-
-                    for ts in shot_timestamps:
-                        if ts[0] < int(frame_timestamp) < ts[1]:
-                            shot_begin_timestamp = ts[0]
-
-                    aux_video_data.append({'image_path': images_path[i], 'frame_timestamp': frame_timestamp,
-                                           'shot_begin_timestamp': shot_begin_timestamp, 'videoname': videoname,
-                                           'videoid': videoid, 'version': done_file_version})
-
-                self.video_index[videoid] = {'version': done_file_version, 'features': aux_features, 'video_data': aux_video_data}
-            else:
-                # FIXME clarify
-                # if features were already indexed return them from the "features" list to the index dict
-
-                # in the video_data search for the data and corresponding index for the current videoid
-                ivd = [[i, vd] for i, vd in enumerate(self.video_data) if vd['videoid'] == videoid]
-
-                # fill the video_index in the same way as in the above if condition
-                self.video_index[videoid]['video_data'] = []
-                self.video_index[videoid]['features'] = []
-                for i, vd in ivd:
-                    self.video_index[videoid]['video_data'].append(vd)
-                    self.video_index[videoid]['features'].append(self.features[i])
-
-        # create a numpy array of the data (features, paths ...) from the index
-        # this makes the features sortable, while keeping the videoid, ... FIXME
-        # delete the data (except the version) from the index to save space
-        features = []
-        video_data = []
-        videos_with_no_features = []
-        for key in self.video_index:
-            # if features were removed in between two updates (meaning they are in the "features"  list but the features don't exist on the disk)
-            # remember the key and remove them later from the dict
-            if not 'features' in self.video_index[key]:
-                videos_with_no_features.append(key)
-            else:
-                f = self.video_index[key].pop('features', None)
-                d = self.video_index[key].pop('video_data', None)
-                features = [*features, *f]
-                video_data = [*video_data, *d]
-        features = np.asarray(features)
-
-        # remove unneeded keys
-        for key in videos_with_no_features:
-            del self.video_index[key]
-
-        self.video_data = video_data
-        self.features = features
-        self.features_norm_sq = (self.features ** 2).sum(axis=1).reshape(-1, 1)
         if videoids:
             for videoid in tqdm(videoids):
 
@@ -282,7 +188,7 @@ class NearDuplicateDetection:
 
                     # read the shotdetect results to map frames to shots
                     shotdetect_file_path = os.path.join(self.features_root, videoid, 'shotdetect/result.xml')
-                    shot_timestamps = self.read_shotdetect_xml(shotdetect_file_path)
+                    shot_timestamps = self.read_shotdetect(shotdetect_file_path)
 
                     # FIXME add comment
                     aux_features = []
