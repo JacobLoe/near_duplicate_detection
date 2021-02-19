@@ -138,7 +138,7 @@ class NearDuplicateDetection:
 
         return concepts
 
-    def update_index(self, videoids=None):
+    def update_index(self, videoids=[]):
         """
 
         :param videoids:
@@ -147,11 +147,11 @@ class NearDuplicateDetection:
 
         # FIXME
         # if no videoids were supplied find all features that were already extracted correctly (meaning a .done-file exists)
-        if not videoids:
+        if len(videoids) == 0:
             feature_done_files = glob.glob(os.path.join(self.features_root, '**', 'features', '.done'), recursive=True)
             videoids = [os.path.split(os.path.split(os.path.split(fdf)[0])[0])[1] for fdf in feature_done_files]
 
-        if videoids:
+        if len(videoids) != 0:
             for videoid in tqdm(videoids):
 
                 features_dir = os.path.join(self.features_root, videoid)
@@ -228,9 +228,9 @@ class NearDuplicateDetection:
             video_data = []
             videos_with_no_features = []
             for key in self.video_index:
-                # if features were removed in between two updates (meaning they are in the "features"  list but the features don't exist on the disk)
-                # remember the key and remove them later from the dict
                 if not 'features' in self.video_index[key]:
+                    # if features were removed in between two updates (meaning they are in the "features" list but the features don't exist on the disk)
+                    # remember the key and remove them later from the dict
                     videos_with_no_features.append(key)
                 else:
                     f = self.video_index[key].pop('features', None)
