@@ -10,7 +10,19 @@ import base64
 import hashlib
 from functools import partial
 import time
+import logging
 
+from waitress import serve
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+ch = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.propagate = False  # prevent log messages from appearing twice
 
 UPLOAD_FOLDER = ''
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
@@ -64,7 +76,7 @@ app = Flask(__name__)
 app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix='/imagesearch')
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['SECRET_KEY'] = 'ndd'
+app.config['SECRET_KEY'] = b'\x13\rp\x96\xe3\x91\xd2\xac\x17\xc11\xb4y\xa5p\xa0'
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 
@@ -79,7 +91,7 @@ def allowed_num_results(num):
         int(num)
         return True
     except:
-        print('The submitted variable is not a valid number')
+        logging.info('The submitted variable is not a valid number')
         return False
 
 
@@ -139,7 +151,7 @@ def upload_file():
                     for n in ('minimum_batch_size', 'maximum_batch_size', 'available_models'):
                         server_options[n] = caps.get(n, None)
             except requests.exceptions.RequestException:
-                print('try failed')
+                logging.info('try failed')
                 pass
 
             # the response is what is sent to the server
@@ -183,4 +195,4 @@ def uploaded_file(filename):
 
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=80)
+    serve(app, host='0.0.0.0', port=80)

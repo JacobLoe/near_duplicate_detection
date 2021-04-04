@@ -1,9 +1,6 @@
-import http.server
 import json
-import urllib.parse
 import datetime
 import logging
-from functools import partial
 
 from extract_features import extract_features, load_model
 from utils import trim, read_shotdetect
@@ -17,8 +14,11 @@ import base64
 import numpy as np
 import requests
 
+from flask import Flask, request
 
-TRIM_THRESHOLD = 12     # the threshold for the trim function, pixels with values lower are considered black and croppped
+from waitress import serve
+
+TRIM_THRESHOLD = 12  # the threshold for the trim function, pixels with values lower are considered black and croppped
 TARGET_WIDTH = 480  # all images that are sent to the client will be scaled to this width (while keeping the aspect ratio intact)
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,10 @@ ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
-logger.propagate = False    # prevent log messages from appearing twice
+logger.propagate = False  # prevent log messages from appearing twice
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = b'\x8bJS@\x8e\xd2\x17Q:\xe9w\x13\r\x8d\xc7\xae'
 
 
 def resize_image(image_path, remove_letterbox=False, target_width=TARGET_WIDTH):
@@ -55,6 +58,20 @@ def resize_image(image_path, remove_letterbox=False, target_width=TARGET_WIDTH):
         image = image.resize(resolution_new)
 
     return image
+
+
+def encode_image_in_base64(image):
+    """
+    Takes an image opened with PIL and encodes it into base64
+    :param image:   PIL image object
+    :return:    a bytes object as string
+    """
+    buf = BytesIO()
+    image.save(buf, 'JPEG')
+    encoded_image = buf.getvalue()
+    encoded_image = base64.encodebytes(encoded_image).decode('ascii')
+
+    return encoded_image
 
 
 class NearDuplicateDetection:
@@ -187,8 +204,8 @@ class NearDuplicateDetection:
                     features_path = glob.glob(fp, recursive=True)
 
                     # read the shotdetect results to map frames to shots
-                    shotdetect_file_path = os.path.join(self.features_root, videoid, 'shotdetect/result.xml')
-                    shot_timestamps = self.read_shotdetect(shotdetect_file_path)
+                    shotdetect_file_path = os.path.join(self.features_root, '{videoid}/shotdetect/{videoid}.csv'.format(videoid=videoid))
+                    shot_timestamps = read_shotdetect(shotdetect_file_path)
 
                     # FIXME add comment
                     aux_features = []
@@ -251,112 +268,55 @@ class NearDuplicateDetection:
             logger.info('No features were extracted yet. Server is not ready to calculate nearest neighbours until the index is updated with features')
 
 
-class RESTHandler(http.server.BaseHTTPRequestHandler):
-    def __init__(self, ndd, *args, **kwargs):
-        #   the server expects an already initialized NeadDuplicateDetection object as argument
-        logger.debug("RESTHandler::__init__")
+@app.route('/', methods=['POST'])
+def process_file():
+    post_data = request.json
 
-        self.ndd = ndd
-        super().__init__(*args, **kwargs)
+    if not post_data['update_index']:
+        # calculate the nearest neighbours the target image
+        logger.info('load query image')
+        query_image = post_data['query_image']
+        query_image = BytesIO(base64.b64decode(query_image))
 
-    def do_HEAD(self):
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
+        # FIXME maybe suppress the resizing, to prevent double resize for feature extraction, suppression may lead to trouble with displaying on the client
+        query_image = resize_image(query_image, remove_letterbox=post_data['remove_letterbox'])
 
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
+        resized_query_image = query_image.resize((299, 299))
+        resized_query_image = np.array(resized_query_image)
+        logger.info('finished loading query image')
 
-        response = json.dumps({"status": 200, "message": "OK"})
-        self.wfile.write(response.encode())
+        logger.info('extract feature for query image')
+        query_feature = extract_features(ndd.inception_model, resized_query_image)
 
-    def do_POST(self):
-        length = int(self.headers['Content-Length'])
-        body = self.rfile.read(length).decode('utf-8')
-        if self.headers['Content-type'] == 'application/json':
-            post_data = json.loads(body)
-        else:
-            post_data = urllib.parse.parse_qs(body)
+        concepts = ndd.calculate_distance(target_feature=query_feature, num_results=post_data['num_results'])
 
-        if not post_data['update_index']:
-            # calculate the nearest neighbours the target image
-            logger.info('load query image')
-            query_image = post_data['query_image']
-            query_image = BytesIO(base64.b64decode(query_image))
+        # encode query image to send it back to the client
+        query_image_bytes = encode_image_in_base64(query_image)
+        for i, c in enumerate(concepts):
+            frame = c['frame']
+            encoded_frame = encode_image_in_base64(frame)
+            concepts[i]['frame'] = encoded_frame
 
-            # FIXME maybe suppress the resizing, to prevent double resize for feature extraction, suppression may lead to trouble with displaying on the client
-            query_image = resize_image(query_image, remove_letterbox=post_data['remove_letterbox'])
+        response = json.dumps({
+            "status": 200,
+            "message": "OK",
+            "data": concepts,
+            "query_image_bytes": query_image_bytes
+        })
+        return response
+    else:
+        # update the index and the features
+        ndd.update_index(videoids=post_data['videoids'])
 
-            resized_query_image = query_image.resize((299, 299))
-            resized_query_image = np.array(resized_query_image)
-            logger.info('finished loading query image')
-
-            logger.info('extract feature for query image')
-            query_feature = extract_features(self.ndd.inception_model, resized_query_image)
-
-            concepts = self.ndd.calculate_distance(target_feature=query_feature, num_results=post_data['num_results'])
-
-            # encode query image to send it back to the client
-            query_image_bytes = self.encode_image_in_base64(query_image)
-            # encode .. images
-            for i, c in enumerate(concepts):
-                frame = c['frame']
-                encoded_frame = self.encode_image_in_base64(frame)
-                concepts[i]['frame'] = encoded_frame
-
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            response = json.dumps({
-                "status": 200,
-                "message": "OK",
-                "data": concepts,
-                "query_image_bytes": query_image_bytes
-            })
-            self.wfile.write(response.encode())
-        else:
-            # update the index and the features
-            self.ndd.update_index(videoids=post_data['videoids'])
-
-            self.send_response(200)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            response = json.dumps({
-                "status": 200,
-                "message": "OK"
-            })
-            self.wfile.write(response.encode())
-
-    def encode_image_in_base64(self, image):
-        """
-        Takes an image opened with PIL and encodes it into base64
-        :param image:   PIL image object
-        :return:    a bytes object as string
-        """
-        buf = BytesIO()
-        image.save(buf, 'JPEG')
-        encoded_image = buf.getvalue()
-        encoded_image = base64.encodebytes(encoded_image).decode('ascii')
-
-        return encoded_image
+        response = json.dumps({
+            "status": 200,
+            "message": "OK"
+        })
+        return response
 
 
 if __name__ == '__main__':
 
-    HOST_NAME = ''
-    PORT_NUMBER = 9000
-
     ndd = NearDuplicateDetection(features_root='../data')
 
-    handler = partial(RESTHandler, ndd)
-    server_class = http.server.HTTPServer
-    httpd = server_class((HOST_NAME, PORT_NUMBER), handler)
-    logger.info("Starting dummy REST server on %s:%d", HOST_NAME, PORT_NUMBER)
-    try:
-        logger.info('server ready')
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        logger.info('setting up server failed failed')
-        pass
+    serve(app, host='0.0.0.0', port=9000)
